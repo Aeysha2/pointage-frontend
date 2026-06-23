@@ -1,0 +1,136 @@
+<div class="scan-container">
+  
+  <!-- En-tête de page -->
+  <header class="scan-header">
+    <a routerLink="/home" class="btn-back" aria-label="Retour à l'accueil">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="back-icon">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+    </a>
+    <h2>Scanner une Sortie</h2>
+    <div class="header-spacer"></div>
+  </header>
+
+  <main class="scan-content">
+    
+    <!-- Zone de lecture de la caméra (Scanner actif) -->
+    <div class="scanner-wrapper" [class.hidden]="!scannerActive || loading || visiteCloturee">
+      <div id="qr-reader" class="reader-view"></div>
+      
+      <!-- Cadre de ciblage rouge pour marquer la sortie -->
+      <div class="scanner-overlay">
+        <div class="scan-frame">
+          <span class="corner top-left"></span>
+          <span class="corner top-right"></span>
+          <span class="corner bottom-left"></span>
+          <span class="corner bottom-right"></span>
+          <div class="scan-line"></div>
+        </div>
+      </div>
+      <p class="scan-instruction">Positionnez le QR Code du visiteur pour sa sortie</p>
+      <button type="button" class="btn-simulate" (click)="simulateScan()">
+        Simuler un scan (Badge de Test)
+      </button>
+    </div>
+
+    <!-- Écran d'acquisition GPS ou enregistrement API (Loading) -->
+    <div class="status-card loading-card" *ngIf="loading">
+      <div class="loader-wrapper">
+        <div class="double-bounce1"></div>
+        <div class="double-bounce2"></div>
+      </div>
+      <h3 *ngIf="gpsAcquiring">Acquisition du signal GPS...</h3>
+      <h3 *ngIf="!gpsAcquiring">Clôture de la visite...</h3>
+      <p class="loading-detail" *ngIf="gpsAcquiring">Vérification de la présence sur site (max 200m)</p>
+      <p class="loading-detail" *ngIf="!gpsAcquiring">Calcul de la durée de présence globale</p>
+    </div>
+
+    <!-- Récapitulatif de la visite clôturée (Succès) -->
+    <div class="status-card summary-card" *ngIf="visiteCloturee">
+      
+      <!-- Badge de statut finalisé -->
+      <div class="badge-finished">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="badge-icon">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>VISITE TERMINÉE</span>
+      </div>
+
+      <h3>{{ visiteCloturee.nom_visiteur }}</h3>
+      <p class="visitor-sub">ID: {{ visiteCloturee.id_visiteur }}</p>
+
+      <!-- Fiche détaillée -->
+      <div class="summary-details">
+        <div class="detail-row">
+          <span class="detail-label">Service visité</span>
+          <span class="detail-value">{{ visiteCloturee.service }} ({{ visiteCloturee.direction }})</span>
+        </div>
+        
+        <div class="detail-row">
+          <span class="detail-label">Date du jour</span>
+          <span class="detail-value">{{ visiteCloturee.date | date:'dd/MM/yyyy' }}</span>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-col">
+            <span class="detail-label">Heure d'entrée</span>
+            <span class="detail-value time">{{ visiteCloturee.heure_entree | date:'HH:mm:ss' }}</span>
+          </div>
+          <div class="detail-col">
+            <span class="detail-label">Heure de sortie</span>
+            <span class="detail-value time">{{ visiteCloturee.heure_sortie | date:'HH:mm:ss' }}</span>
+          </div>
+        </div>
+
+        <!-- Durée de présence mise en avant -->
+        <div class="duration-highlight">
+          <div class="duration-label">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="clock-icon">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12,6 12,12 16,14"></polyline>
+            </svg>
+            <span>Durée totale sur place</span>
+          </div>
+          <span class="duration-val">{{ visiteCloturee.duree_totale }} min</span>
+        </div>
+      </div>
+
+      <button class="btn-done" (click)="finishFlow()">
+        <span>Valider & Retour</span>
+      </button>
+    </div>
+
+    <!-- Écran d'erreur et aide à la résolution -->
+    <div class="status-card error-card" *ngIf="errorMessage && !loading && !visiteCloturee">
+      <div class="error-icon-wrapper">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="error-icon">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <h3>Clôture impossible</h3>
+      <p class="error-text">{{ errorMessage }}</p>
+
+      <!-- Aide caméra / GPS -->
+      <div class="help-section" *ngIf="cameraPermissionError">
+        <h4>Comment activer la caméra ?</h4>
+        <ol>
+          <li>Cliquez sur l'icône de cadenas 🔒 dans la barre d'adresse de votre navigateur.</li>
+          <li>Activez l'autorisation pour la <strong>Caméra</strong>.</li>
+          <li>Actualisez la page et réessayez.</li>
+        </ol>
+      </div>
+
+      <button class="btn-retry" (click)="retryScan()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="retry-icon">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+        </svg>
+        <span>Réessayer le scan</span>
+      </button>
+    </div>
+
+  </main>
+</div>

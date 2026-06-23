@@ -1,0 +1,449 @@
+// Variables de style
+$color-bg: #F8FAFC;
+$color-card-bg: #FFFFFF;
+$color-accent: #1565C0; // Bleu
+$color-text: #1C1C1E;
+$color-text-muted: #64748B;
+$color-border: #E2E8F0;
+$color-green: #00C853; // Vert Entrée
+$color-red: #FF1744; // Rouge
+
+.scan-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: $color-bg;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  box-sizing: border-box;
+}
+
+// En-tête du scanner
+.scan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background-color: $color-card-bg;
+  border-bottom: 1px solid $color-border;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
+
+  .btn-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    color: $color-text-muted;
+    background-color: $color-bg;
+    text-decoration: none;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: $color-text;
+      background-color: $color-border;
+    }
+
+    .back-icon {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  h2 {
+    font-size: 1.15rem;
+    font-weight: 750;
+    margin: 0;
+    color: $color-text;
+  }
+
+  .header-spacer {
+    width: 42px;
+  }
+}
+
+// Contenu principal
+.scan-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+}
+
+// Enveloppe du scanner
+.scanner-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background-color: #000000;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  aspect-ratio: 3/4;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  &.hidden {
+    display: none;
+  }
+
+  // Le lecteur vidéo html5-qrcode
+  .reader-view {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    
+    // Surcharger les styles natifs moches de la bibliothèque
+    ::ng-deep {
+      video {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+      }
+      #qr-reader__dashboard {
+        display: none !important;
+      }
+      #qr-reader__header_message {
+        display: none !important;
+      }
+    }
+  }
+
+  // Overlay avec cadre de ciblage
+  .scanner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+  }
+
+  .scan-frame {
+    position: relative;
+    width: 250px;
+    height: 250px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 24px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45); // Masque sombre extérieur
+
+    // Les coins renforcés
+    .corner {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-color: $color-green;
+      border-style: solid;
+      border-width: 0;
+
+      &.top-left {
+        top: -2px;
+        left: -2px;
+        border-top-width: 4px;
+        border-left-width: 4px;
+        border-top-left-radius: 12px;
+      }
+      &.top-right {
+        top: -2px;
+        right: -2px;
+        border-top-width: 4px;
+        border-right-width: 4px;
+        border-top-right-radius: 12px;
+      }
+      &.bottom-left {
+        bottom: -2px;
+        left: -2px;
+        border-bottom-width: 4px;
+        border-left-width: 4px;
+        border-bottom-left-radius: 12px;
+      }
+      &.bottom-right {
+        bottom: -2px;
+        right: -2px;
+        border-bottom-width: 4px;
+        border-right-width: 4px;
+        border-bottom-right-radius: 12px;
+      }
+    }
+
+    // Ligne laser animée
+    .scan-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, $color-green, transparent);
+      box-shadow: 0 0 8px $color-green;
+      animation: scanLaser 2.2s linear infinite;
+    }
+  }
+
+  .scan-instruction {
+    position: absolute;
+    bottom: 4.5rem;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: #FFFFFF;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    margin: 0;
+    padding: 0 1rem;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .btn-simulate {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    border-radius: 30px;
+    padding: 0.6rem 1.25rem;
+    font-size: 0.825rem;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 11;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.25);
+      border-color: #FFFFFF;
+    }
+    
+    &:active {
+      transform: translateX(-50%) scale(0.97);
+    }
+  }
+}
+
+// Cartes de statut (Succès, Chargement, Erreur)
+.status-card {
+  width: 100%;
+  max-width: 400px;
+  background-color: $color-card-bg;
+  border-radius: 24px;
+  padding: 3rem 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+  border: 1px solid $color-border;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  h3 {
+    font-size: 1.35rem;
+    font-weight: 750;
+    color: $color-text;
+    margin: 1.5rem 0 0.5rem;
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: $color-text-muted;
+    line-height: 1.5;
+    margin: 0;
+  }
+}
+
+// Spécificités Chargement
+.loading-card {
+  .loader-wrapper {
+    position: relative;
+    width: 60px;
+    height: 60px;
+
+    .double-bounce1, .double-bounce2 {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background-color: $color-green;
+      opacity: 0.6;
+      position: absolute;
+      top: 0;
+      left: 0;
+      animation: sk-bounce 2.0s infinite ease-in-out;
+    }
+
+    .double-bounce2 {
+      animation-delay: -1.0s;
+    }
+  }
+
+  .loading-detail {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+}
+
+// Spécificités Succès
+.success-card {
+  .success-icon-wrapper {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background-color: rgba($color-green, 0.1);
+    color: $color-green;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .success-icon {
+      width: 36px;
+      height: 36px;
+    }
+  }
+
+  .redirect-info {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $color-text-muted;
+    margin-top: 1.5rem;
+  }
+}
+
+// Spécificités Erreurs
+.error-card {
+  .error-icon-wrapper {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background-color: rgba($color-red, 0.1);
+    color: $color-red;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .error-icon {
+      width: 36px;
+      height: 36px;
+    }
+  }
+
+  .error-text {
+    color: $color-red;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+  }
+
+  // Section d'aide pour permission caméra/GPS
+  .help-section {
+    width: 100%;
+    text-align: left;
+    background-color: $color-bg;
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid $color-border;
+
+    h4 {
+      font-size: 0.875rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem;
+      color: $color-text;
+    }
+
+    ol {
+      margin: 0;
+      padding-left: 1.2rem;
+      font-size: 0.825rem;
+      color: $color-text-muted;
+      line-height: 1.5;
+
+      li {
+        margin-bottom: 0.4rem;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+
+  .btn-retry {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: $color-accent;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 12px;
+    padding: 0.8rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba($color-accent, 0.15);
+
+    &:hover {
+      background-color: darken($color-accent, 8%);
+      transform: translateY(-1px);
+    }
+
+    .retry-icon {
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+// Animations
+@keyframes scanLaser {
+  0% {
+    top: 5%;
+  }
+  50% {
+    top: 90%;
+  }
+  100% {
+    top: 5%;
+  }
+}
+
+@keyframes sk-bounce {
+  0%, 100% { 
+    transform: scale(0.0);
+  } 50% { 
+    transform: scale(1.0);
+  }
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Mobile optimize
+@media (max-width: 480px) {
+  .scan-content {
+    padding: 1.25rem 1rem;
+  }
+  
+  .scanner-wrapper {
+    aspect-ratio: 1/1; // Format carré pour mobile
+  }
+
+  .scan-frame {
+    width: 200px;
+    height: 200px;
+  }
+}

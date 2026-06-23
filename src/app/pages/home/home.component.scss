@@ -1,0 +1,487 @@
+// Variables locales de thème
+$color-bg: #F8FAFC;
+$color-card-bg: #FFFFFF;
+$color-accent: #1565C0; // Bleu professionnel
+$color-text: #1C1C1E;
+$color-text-muted: #64748B;
+$color-border: #E2E8F0;
+$color-green: #00C853; // Vert Entrée
+$color-red: #FF1744;   // Rouge Sortie
+$color-warning-bg: #FFF9C4;
+$color-warning-text: #F57F17;
+
+.home-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: $color-bg;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding-bottom: 90px; // Espace pour la barre de navigation basse
+}
+
+// En-tête
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background-color: $color-card-bg;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.01);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  .agent-profile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .avatar-container {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+
+      .agent-avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .avatar-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        background-color: rgba($color-accent, 0.08);
+        color: $color-accent;
+
+        .avatar-icon {
+          width: 24px;
+          height: 24px;
+        }
+      }
+    }
+
+    .agent-info {
+      h2 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0;
+        color: $color-text;
+      }
+      .agent-role {
+        font-size: 0.825rem;
+        color: $color-text-muted;
+        font-weight: 500;
+      }
+    }
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background-color: rgba($color-green, 0.08);
+    border-radius: 20px;
+
+    .indicator-dot {
+      width: 8px;
+      height: 8px;
+      background-color: $color-green;
+      border-radius: 50%;
+      animation: pulse 1.8s infinite;
+    }
+
+    .indicator-text {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: $color-green;
+    }
+  }
+}
+
+// Section principale
+.app-content {
+  flex: 1;
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+// Grosses cartes d'actions
+.action-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+
+  .action-btn {
+    border: none;
+    border-radius: 20px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+
+    .btn-content {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .icon-circle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      transition: transform 0.3s ease;
+    }
+
+    .text-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .action-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+
+    .action-desc {
+      font-size: 0.8rem;
+      opacity: 0.8;
+      margin-top: 0.15rem;
+    }
+
+    // Bouton Entrée spécifique
+    &.btn-entree {
+      background-color: $color-green;
+      color: #FFFFFF;
+      box-shadow: 0 8px 20px rgba($color-green, 0.15);
+
+      .icon-circle {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba($color-green, 0.25);
+        
+        .icon-circle {
+          transform: rotate(90deg);
+        }
+      }
+    }
+
+    // Bouton Sortie spécifique
+    &.btn-sortie {
+      background-color: $color-red;
+      color: #FFFFFF;
+      box-shadow: 0 8px 20px rgba($color-red, 0.15);
+
+      .icon-circle {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba($color-red, 0.25);
+        
+        .icon-circle {
+          transform: scale(1.1);
+        }
+      }
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+  }
+}
+
+// Section Visites Actives
+.visites-actives {
+  .section-title-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: $color-text;
+      margin: 0;
+    }
+
+    .pulse-live {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: $color-red;
+      animation: pulse 1.5s infinite;
+      letter-spacing: 0.5px;
+    }
+  }
+}
+
+// Cartes de visites en cours
+.visites-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+.visite-card {
+  background-color: $color-card-bg;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.01);
+  border: 1px solid $color-border;
+  padding: 1.25rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid $color-border;
+    padding-bottom: 0.875rem;
+    margin-bottom: 0.875rem;
+
+    .visitor-meta {
+      display: flex;
+      flex-direction: column;
+
+      .visitor-name {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: $color-text;
+      }
+      .visitor-id {
+        font-size: 0.775rem;
+        color: $color-text-muted;
+        margin-top: 0.15rem;
+      }
+    }
+
+    .badge-status {
+      font-size: 0.725rem;
+      font-weight: 700;
+      padding: 0.3rem 0.6rem;
+      background-color: rgba($color-accent, 0.08);
+      color: $color-accent;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .info-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .info-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+
+      .info-label {
+        font-size: 0.75rem;
+        color: $color-text-muted;
+        font-weight: 500;
+      }
+
+      .info-val {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: $color-text;
+      }
+    }
+
+    // Bloc minuteur temps réel
+    .timer-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: $color-bg;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      border: 1px dashed $color-border;
+
+      .timer-label-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.825rem;
+        color: $color-text-muted;
+        font-weight: 500;
+
+        .timer-icon {
+          width: 18px;
+          height: 18px;
+          color: $color-accent;
+        }
+      }
+
+      .timer-value {
+        font-size: 1.15rem;
+        font-weight: 750;
+        color: $color-accent;
+        font-feature-settings: "tnum"; // Monospace pour les chiffres
+      }
+    }
+  }
+}
+
+// État vide
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  background-color: $color-card-bg;
+  border-radius: 16px;
+  border: 1px dashed $color-border;
+  text-align: center;
+
+  .empty-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: rgba($color-text-muted, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    color: $color-text-muted;
+
+    .empty-icon {
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: $color-text-muted;
+    margin: 0;
+  }
+}
+
+// Barre de navigation fixe en bas
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
+  background-color: $color-card-bg;
+  border-top: 1px solid $color-border;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.03);
+  z-index: 1000;
+  padding: 0 1rem;
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    color: $color-text-muted;
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    font-size: 0.725rem;
+    font-weight: 600;
+    min-width: 70px;
+
+    .nav-icon {
+      width: 22px;
+      height: 22px;
+      transition: transform 0.2s ease;
+    }
+
+    &:hover {
+      color: $color-accent;
+      
+      .nav-icon {
+        transform: translateY(-1px);
+      }
+    }
+
+    &.active {
+      color: $color-accent;
+
+      .nav-icon {
+        stroke-width: 2.5px;
+      }
+    }
+  }
+
+  .btn-logout-nav {
+    &:hover {
+      color: $color-red;
+    }
+  }
+}
+
+// Animations
+@keyframes pulse {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+// Responsive design
+@media (max-width: 600px) {
+  .app-content {
+    padding: 1.25rem;
+  }
+
+  .action-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+
+    .action-btn {
+      padding: 1.25rem;
+    }
+  }
+
+  .app-header {
+    padding: 1.25rem 1rem;
+  }
+}

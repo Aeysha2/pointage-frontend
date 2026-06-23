@@ -1,0 +1,256 @@
+// Variables locales pour le thème
+$color-bg-light: #F8FAFC;
+$color-card-bg: #FFFFFF;
+$color-accent: #1565C0; // Bleu professionnel
+$color-accent-hover: #0D47A1;
+$color-text: #1C1C1E;
+$color-text-muted: #64748B;
+$color-border: #E2E8F0;
+$color-error: #FF1744; // Rouge
+$color-error-bg: #FFE5EC;
+
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: radial-gradient(circle at top right, rgba(21, 101, 192, 0.08), transparent 40%),
+              radial-gradient(circle at bottom left, rgba(21, 101, 192, 0.05), transparent 40%),
+              $color-bg-light;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: 1.5rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  background: $color-card-bg;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04), 
+              0 1px 3px rgba(0, 0, 0, 0.02),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  padding: 3rem 2.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(21, 101, 192, 0.08);
+  }
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+
+  .logo-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    background-color: rgba($color-accent, 0.08);
+    color: $color-accent;
+    border-radius: 16px;
+    margin-bottom: 1.25rem;
+    transition: transform 0.3s ease;
+
+    &:hover {
+      transform: rotate(5deg) scale(1.05);
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: $color-text;
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+
+  .subtitle {
+    font-size: 0.925rem;
+    color: $color-text-muted;
+    margin: 0.5rem 0 0;
+  }
+}
+
+// Formulaires réactifs
+.form-group {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $color-text;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.2px;
+  }
+
+  .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .input-icon {
+      position: absolute;
+      left: 1rem;
+      width: 20px;
+      height: 20px;
+      color: $color-text-muted;
+      pointer-events: none;
+      transition: color 0.3s ease;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.875rem 1rem 0.875rem 2.75rem;
+      border: 1.5px solid $color-border;
+      border-radius: 12px;
+      background: $color-bg-light;
+      color: $color-text;
+      font-size: 0.95rem;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      outline: none;
+
+      &::placeholder {
+        color: #94A3B8;
+      }
+
+      &:focus {
+        border-color: $color-accent;
+        background: $color-card-bg;
+        box-shadow: 0 0 0 4px rgba($color-accent, 0.12);
+
+        + .input-icon {
+          color: $color-accent;
+        }
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  &.has-error {
+    .input-wrapper input {
+      border-color: $color-error;
+      
+      &:focus {
+        box-shadow: 0 0 0 4px rgba($color-error, 0.12);
+      }
+    }
+    .input-wrapper .input-icon {
+      color: $color-error;
+    }
+  }
+
+  .error-feedback {
+    margin-top: 0.4rem;
+    font-size: 0.775rem;
+    color: $color-error;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+  }
+}
+
+// Bouton de connexion moderne
+.btn-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.9rem;
+  background-color: $color-accent;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba($color-accent, 0.2);
+  margin-top: 1rem;
+
+  &:hover:not(:disabled) {
+    background-color: $color-accent-hover;
+    box-shadow: 0 6px 16px rgba($color-accent, 0.3);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #FFFFFF;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+// Alertes
+.alert {
+  display: flex;
+  align-items: flex-start;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  animation: slideIn 0.3s ease;
+
+  .alert-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  &.alert-danger {
+    background-color: $color-error-bg;
+    color: $color-error;
+    border: 1px solid rgba($color-error, 0.2);
+  }
+}
+
+// Animations
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Media Query Mobile
+@media (max-width: 480px) {
+  .login-card {
+    padding: 2.25rem 1.5rem;
+    border-radius: 16px;
+  }
+}
