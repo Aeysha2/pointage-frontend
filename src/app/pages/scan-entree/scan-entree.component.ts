@@ -6,6 +6,7 @@ import { GeolocationService } from '../../core/services/geolocation.service';
 import { VisiteService } from '../../core/services/visite.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Visite } from '../../core/models/visite.model';
+import { timeout } from 'rxjs';
 
 @Component({
   selector: 'app-scan-entree',
@@ -162,7 +163,9 @@ export class ScanEntreeComponent implements OnInit, OnDestroy, AfterViewInit {
     this.gpsAcquiring = true;
     this.gpsPermissionError = false;
 
-    this.geolocationService.getCurrentPosition().subscribe({
+    this.geolocationService.getCurrentPosition().pipe(
+      timeout(5000)
+    ).subscribe({
       next: (position) => {
         this.gpsAcquiring = false;
         
@@ -210,11 +213,13 @@ export class ScanEntreeComponent implements OnInit, OnDestroy, AfterViewInit {
           }
         });
       },
-      error: (err: Error) => {
+      error: (err: any) => {
         this.gpsAcquiring = false;
         this.loading = false;
         this.gpsPermissionError = true;
-        this.errorMessage = err.message;
+        this.errorMessage = err.name === 'TimeoutError'
+          ? "L'acquisition GPS a expiré (5s). Veuillez autoriser la localisation ou réessayer."
+          : err.message;
       }
     });
   }
