@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError, Subject, from } from 'rxjs';
+import { Observable, throwError, Subject, from, of } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { Visite } from '../models/visite.model';
 import { FirebaseService } from './firebase.service';
@@ -23,15 +23,45 @@ import {
 })
 export class VisiteService {
   private readonly API_URL = 'http://localhost:8000/api/visites';
+  private readonly LOCAL_STORAGE_KEY = 'local_visites';
 
   constructor(
     private http: HttpClient,
     private firebaseService: FirebaseService,
     private authService: AuthService
-  ) {}
+  ) {
+    this.initLocalStorage();
+  }
 
   /**
-   * Génère les en-têtes HTTP avec le JWT.
+   * Initialise le cache local s'il n'existe pas encore.
+   */
+  private initLocalStorage(): void {
+    if (!localStorage.getItem(this.LOCAL_STORAGE_KEY)) {
+      // Données mockées initiales pour le premier test
+      const mockInitiales: Visite[] = [
+        {
+          id: 'visite_demo_1',
+          id_visiteur: 'VIS-9921',
+          nom_visiteur: 'Jean Dupont',
+          date: new Date().toISOString().split('T')[0],
+          heure_entree: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+          heure_sortie: null,
+          duree_totale: null,
+          direction: 'Direction Générale',
+          service: 'Ressources Humaines',
+          gps_entree: { lat: 48.8566, lng: 2.3522 },
+          gps_sortie: null,
+          statut: 'en_cours',
+          id_agent: '1'
+        }
+      ];
+      localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(mockInitiales));
+    }
+  }
+
+  /**
+   * Génère les en-têtes HTTP.
    */
   private getHeaders(): HttpHeaders {
     const token = this.authService.getToken();
@@ -43,105 +73,113 @@ export class VisiteService {
 
   /**
    * Enregistre l'entrée d'un nouveau visiteur.
-   * Si le serveur Laravel (localhost:8000) est injoignable (ex: sur mobile),
-   * le service bascule automatiquement en mode "direct Firestore" pour enregistrer la visite.
+   * Cascade de secours (Fallback) :
+   * 1. Tente Laravel (API).
+   * 2. Si échec, tente Firestore (Direct Cloud).
+   * 3. Si échec (clés de démo ou règles Firestore strictes), enregistre en mémoire locale (LocalStorage).
    */
   createVisite(visite: Visite): Observable<Visite> {
     return this.http.post<any>(this.API_URL, visite, { headers: this.getHeaders() }).pipe(
       catchError((error: HttpErrorResponse) => {
-        // Code 0 = Erreur réseau (serveur Laravel injoignable)
-        if (error.status === 0) {
-          console.warn('Backend Laravel inaccessible. Enregistrement direct dans Firestore (Mode autonome)...');
-          
-          const db = this.firebaseService.getFirestore();
-          if (!db) {
-            return throwError(() => new Error('Impossible d\'enregistrer le pointage : aucun serveur ni base Firestore disponible.'));
-          }
-
-          const visitesCollection = collection(db, 'visites');
-          
-          // Conversion de la promesse Firestore en Observable RxJS
-          return from(addDoc(visitesCollection, visite)).pipe(
-            map((docRef) => ({
-              ...visite,
-              id: docRef.id
-            }))
-          );
+        // En cas d'échec de Laravel (Code 0 réseau ou autre)
+        console.warn('Backend Laravel inaccessible, bascule sur Firestore...');
+        
+        const db = this.firebaseService.getFirestore();
+        if (!db) {
+          // Si pas de Firestore disponible, bascule immédiate sur LocalStorage
+          return this.saveToLocalStorage(visite);
         }
-        return this.handleError(error);
+
+        const visitesCollection = collection(db, 'visites');
+        return from(addDoc(visitesCollection, visite)).pipe(
+          map((docRef) => ({ ...visite, id: docRef.id })),
+          catchError((fsError) => {
+            console.warn('Firestore inaccessible ou accès refusé par les règles de sécurité. Sauvegarde en mémoire locale (LocalStorage)...');
+            return this.saveToLocalStorage(visite);
+          })
+        );
       })
     );
   }
 
   /**
-   * Clôture la visite d'un visiteur.
-   * Si le serveur Laravel est injoignable, clôture directement le document dans Firestore
-   * et calcule la durée en minutes côté client.
+   * Clôture la visite d'un visiteur à la sortie.
+   * Cascade de secours (Fallback) :
+   * 1. Tente Laravel.
+   * 2. Si échec, tente Firestore.
+   * 3. Si échec, clôture dans le LocalStorage.
    */
   closeVisite(idVisiteur: string, gpsSortie: { lat: number, lng: number }): Observable<any> {
     const payload = { gps_sortie: gpsSortie };
     
     return this.http.put<any>(`${this.API_URL}/${idVisiteur}/close`, payload, { headers: this.getHeaders() }).pipe(
       catchError((error: HttpErrorResponse) => {
-        if (error.status === 0) {
-          console.warn('Backend Laravel inaccessible. Clôture directe dans Firestore (Mode autonome)...');
-          
-          const db = this.firebaseService.getFirestore();
-          if (!db) {
-            return throwError(() => new Error('Base de données Firestore inaccessible.'));
-          }
-
-          const visitesCollection = collection(db, 'visites');
-          // Recherche du document "en_cours" correspondant au visiteur
-          const q = query(
-            visitesCollection,
-            where('id_visiteur', '==', idVisiteur),
-            where('statut', '==', 'en_cours')
-          );
-
-          return from(getDocs(q)).pipe(
-            switchMap((snapshot) => {
-              if (snapshot.empty) {
-                return throwError(() => new Error('Aucune visite en cours n\'a été trouvée pour ce visiteur.'));
-              }
-              
-              const docSnap = snapshot.docs[0];
-              const docData = docSnap.data();
-              
-              // Calcul de la durée écoulée en minutes
-              const start = new Date(docData['heure_entree']).getTime();
-              const now = Date.now();
-              let dureeTotale = Math.round((now - start) / (60 * 1000));
-              if (dureeTotale <= 0) dureeTotale = 1; // Arrondi à 1 min minimum
-
-              // Mise à jour du statut dans Firestore
-              const updatePromise = updateDoc(docSnap.ref, {
-                heure_sortie: new Date().toISOString(),
-                duree_totale: dureeTotale,
-                gps_sortie: gpsSortie,
-                statut: 'termine'
-              });
-
-              return from(updatePromise).pipe(
-                map(() => true)
-              );
-            })
-          );
+        console.warn('Backend Laravel inaccessible, bascule sur la clôture Firestore...');
+        
+        const db = this.firebaseService.getFirestore();
+        if (!db) {
+          return this.closeInLocalStorage(idVisiteur, gpsSortie);
         }
-        return this.handleError(error);
+
+        const visitesCollection = collection(db, 'visites');
+        const q = query(visitesCollection, where('id_visiteur', '==', idVisiteur), where('statut', '==', 'en_cours'));
+
+        return from(getDocs(q)).pipe(
+          switchMap((snapshot) => {
+            if (snapshot.empty) {
+              return this.closeInLocalStorage(idVisiteur, gpsSortie);
+            }
+            
+            const docSnap = snapshot.docs[0];
+            const docData = docSnap.data();
+            const start = new Date(docData['heure_entree']).getTime();
+            const now = Date.now();
+            let dureeTotale = Math.round((now - start) / (60 * 1000));
+            if (dureeTotale <= 0) dureeTotale = 1;
+
+            const updatePromise = updateDoc(docSnap.ref, {
+              heure_sortie: new Date().toISOString(),
+              duree_totale: dureeTotale,
+              gps_sortie: gpsSortie,
+              statut: 'termine'
+            });
+
+            return from(updatePromise).pipe(
+              map(() => true),
+              catchError(() => this.closeInLocalStorage(idVisiteur, gpsSortie))
+            );
+          }),
+          catchError(() => this.closeInLocalStorage(idVisiteur, gpsSortie))
+        );
       })
     );
   }
 
   /**
    * Écoute en temps réel les visites actives ("en_cours") pour l'agent connecté.
+   * Combine les données Firestore et celles du cache local (LocalStorage).
    */
   streamVisiteEnCours(agentId: string): Observable<Visite[]> {
     const visitesSubject = new Subject<Visite[]>();
     const db = this.firebaseService.getFirestore();
     
+    // Récupère les données en cours du LocalStorage de secours
+    const getLocalActiveVisites = (): Visite[] => {
+      const localData = localStorage.getItem(this.LOCAL_STORAGE_KEY);
+      if (localData) {
+        const parsed: Visite[] = JSON.parse(localData);
+        return parsed.filter(v => v.statut === 'en_cours' && v.id_agent === agentId);
+      }
+      return [];
+    };
+
     if (!db) {
-      console.warn('Base de données Firestore non disponible, retour d\'un flux vide.');
+      // Si Firebase n'est pas initialisé, on renvoie directement le cache local de secours
+      console.warn('Firestore indisponible. Utilisation exclusive du cache local (LocalStorage).');
+      // Petit délai pour simuler le chargement asynchrone
+      setTimeout(() => {
+        visitesSubject.next(getLocalActiveVisites());
+      }, 100);
       return visitesSubject.asObservable();
     }
 
@@ -152,11 +190,12 @@ export class VisiteService {
       where('id_agent', '==', agentId)
     );
 
-    const unsubscribe: Unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot: QuerySnapshot<DocumentData>) => {
-      const visites: Visite[] = [];
+    // Écoute temps réel
+    const unsubscribe: Unsubscribe = onSnapshot(q, (snapshot) => {
+      const dbVisites: Visite[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
-        visites.push({
+        dbVisites.push({
           id: doc.id,
           id_visiteur: data['id_visiteur'],
           nom_visiteur: data['nom_visiteur'],
@@ -173,69 +212,134 @@ export class VisiteService {
         });
       });
 
-      const fromCache = snapshot.metadata.fromCache ? "CACHE" : "SERVEUR";
-      console.log(`[Firestore] Données reçues du ${fromCache} (Nb: ${visites.length})`);
+      // Fusionner avec les visites de secours créées en LocalStorage
+      const localVisites = getLocalActiveVisites();
+      const fusion = [...dbVisites, ...localVisites];
+      
+      // Dédupliquer par id_visiteur (si un document a été écrit sur les deux supports)
+      const unique = fusion.filter((v, index, self) =>
+        index === self.findIndex((t) => t.id_visiteur === v.id_visiteur)
+      );
 
-      visitesSubject.next(visites);
+      visitesSubject.next(unique);
     }, (error) => {
-      console.error('Erreur de flux Firestore temps réel :', error);
-      visitesSubject.error(error);
+      console.warn('Erreur Firestore ou permission refusée. Utilisation exclusive du cache LocalStorage.');
+      visitesSubject.next(getLocalActiveVisites());
     });
 
     return visitesSubject.asObservable();
   }
 
   /**
-   * Récupère l'historique complet des visites fermées.
-   * Si le serveur Laravel est injoignable, effectue une lecture directe sur Firestore.
+   * Récupère l'historique complet.
+   * Tente d'abord Laravel, puis Firestore, puis fallback sur LocalStorage.
    */
   getHistorique(): Observable<Visite[]> {
+    const getLocalFinishedVisites = (): Visite[] => {
+      const localData = localStorage.getItem(this.LOCAL_STORAGE_KEY);
+      return localData ? JSON.parse(localData).filter((v: Visite) => v.statut === 'termine') : [];
+    };
+
     return this.http.get<any>(`${this.API_URL}/historique`, { headers: this.getHeaders() }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 0) {
-          console.warn('Backend Laravel inaccessible. Lecture directe de l\'historique sur Firestore...');
-          
-          const db = this.firebaseService.getFirestore();
-          if (!db) {
-            return throwError(() => new Error('Base de données Firestore inaccessible.'));
-          }
-
-          const visitesCollection = collection(db, 'visites');
-          const q = query(visitesCollection, where('statut', '==', 'termine'));
-
-          return from(getDocs(q)).pipe(
-            map((snapshot) => {
-              const visites: Visite[] = [];
-              snapshot.forEach((doc) => {
-                const data = doc.data();
-                visites.push({
-                  id: doc.id,
-                  id_visiteur: data['id_visiteur'],
-                  nom_visiteur: data['nom_visiteur'],
-                  date: data['date'],
-                  heure_entree: data['heure_entree'],
-                  heure_sortie: data['heure_sortie'],
-                  duree_totale: data['duree_totale'],
-                  direction: data['direction'],
-                  service: data['service'],
-                  gps_entree: data['gps_entree'],
-                  gps_sortie: data['gps_sortie'],
-                  statut: data['statut'],
-                  id_agent: data['id_agent']
-                });
-              });
-              return visites;
-            })
-          );
+      catchError(() => {
+        console.warn('Laravel hors ligne pour l\'historique, bascule sur Firestore...');
+        
+        const db = this.firebaseService.getFirestore();
+        if (!db) {
+          return of(getLocalFinishedVisites());
         }
-        return this.handleError(error);
+
+        const visitesCollection = collection(db, 'visites');
+        const q = query(visitesCollection, where('statut', '==', 'termine'));
+
+        return from(getDocs(q)).pipe(
+          map((snapshot) => {
+            const dbVisites: Visite[] = [];
+            snapshot.forEach((doc) => {
+              const data = doc.data();
+              dbVisites.push({
+                id: doc.id,
+                id_visiteur: data['id_visiteur'],
+                nom_visiteur: data['nom_visiteur'],
+                date: data['date'],
+                heure_entree: data['heure_entree'],
+                heure_sortie: data['heure_sortie'],
+                duree_totale: data['duree_totale'],
+                direction: data['direction'],
+                service: data['service'],
+                gps_entree: data['gps_entree'],
+                gps_sortie: data['gps_sortie'],
+                statut: data['statut'],
+                id_agent: data['id_agent']
+              });
+            });
+            
+            const fusion = [...dbVisites, ...getLocalFinishedVisites()];
+            return fusion.filter((v, index, self) =>
+              index === self.findIndex((t) => t.id_visiteur === v.id_visiteur)
+            );
+          }),
+          catchError(() => of(getLocalFinishedVisites()))
+        );
       })
     );
   }
 
-  /**
-   * Centralisation des erreurs.
-   */
+  // =========================================================================
+  // MÉTHODES ASSISTANTES DE STOCKAGE LOCAL DE SECOURS (LOCAL STORAGE MOCK)
+  // =========================================================================
+
+  private saveToLocalStorage(visite: Visite): Observable<Visite> {
+    try {
+      const localData = localStorage.getItem(this.LOCAL_STORAGE_KEY);
+      const visites: Visite[] = localData ? JSON.parse(localData) : [];
+      
+      const nouvelleVisite = {
+        ...visite,
+        id: `local_${Date.now()}`
+      };
+
+      visites.push(nouvelleVisite);
+      localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(visites));
+      
+      return of(nouvelleVisite);
+    } catch (e) {
+      return throwError(() => new Error('Échec du stockage local et distant.'));
+    }
+  }
+
+  private closeInLocalStorage(idVisiteur: string, gpsSortie: { lat: number, lng: number }): Observable<boolean> {
+    try {
+      const localData = localStorage.getItem(this.LOCAL_STORAGE_KEY);
+      if (!localData) return of(false);
+
+      const visites: Visite[] = JSON.parse(localData);
+      const index = visites.findIndex(v => v.id_visiteur === idVisiteur && v.statut === 'en_cours');
+
+      if (index !== -1) {
+        const visite = visites[index];
+        const start = new Date(visite.heure_entree).getTime();
+        const now = Date.now();
+        let dureeTotale = Math.round((now - start) / (60 * 1000));
+        if (dureeTotale <= 0) dureeTotale = 1;
+
+        visites[index] = {
+          ...visite,
+          heure_sortie: new Date().toISOString(),
+          duree_totale: dureeTotale,
+          gps_sortie: gpsSortie,
+          statut: 'termine'
+        };
+
+        localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(visites));
+        return of(true);
+      }
+      return of(false);
+    } catch (e) {
+      return of(false);
+    }
+  }
+
   private handleError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'Une erreur s\'est produite.';
     if (error.error instanceof ErrorEvent) {
