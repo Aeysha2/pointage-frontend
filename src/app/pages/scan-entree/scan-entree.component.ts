@@ -171,8 +171,7 @@ export class ScanEntreeComponent implements OnInit, OnDestroy, AfterViewInit {
         const insideRadius = this.geolocationService.isWithinAllowedRadius(position.latitude, position.longitude);
 
         if (!insideRadius) {
-          // Échec du GPS : Trop éloigné
-          this.errorMessage = `Pointage impossible. Vous êtes trop éloigné du site de l'entreprise (${Math.round(distance)}m mesurés, max 200m).`;
+          this.errorMessage = "Pointage impossible. Vous devez être localisé géographiquement au Sénégal pour valider ce pointage.";
           this.loading = false;
           return;
         }

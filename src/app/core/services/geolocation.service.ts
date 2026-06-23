@@ -92,10 +92,25 @@ export class GeolocationService {
    * @param agentLng Longitude mesurée
    * @param maxRadius Rayon maximal toléré en mètres (par défaut 200m)
    */
-  isWithinAllowedRadius(agentLat: number, agentLng: number, maxRadius: number = 200): boolean {
-    // Pour faciliter les tests et la démonstration depuis n'importe quelle localisation (ex: domicile),
-    // nous désactivons la restriction de distance de 200m et renvoyons toujours true.
-    // En production, cette ligne serait : return this.calculateDistance(agentLat, agentLng) <= maxRadius;
-    return true;
+  /**
+   * Vérifie si l'agent est situé à l'intérieur des frontières géographiques du Sénégal.
+   * Utilise une Bounding Box (boîte de délimitation GPS) pour une exécution ultra-rapide.
+   * 
+   * @param agentLat Latitude mesurée de l'appareil
+   * @param agentLng Longitude mesurée de l'appareil
+   */
+  isWithinAllowedRadius(agentLat: number, agentLng: number): boolean {
+    // Frontières géographiques approximatives du Sénégal :
+    // Latitude : de ~12.3° N (frontière Sud) à ~16.7° N (frontière Nord)
+    // Longitude : de ~-17.6° W (Dakar / Ouest) à ~-11.3° W (Est)
+    const minLat = 12.0;
+    const maxLat = 17.0;
+    const minLng = -18.0;
+    const maxLng = -11.0;
+
+    const isInside = agentLat >= minLat && agentLat <= maxLat && agentLng >= minLng && agentLng <= maxLng;
+    
+    console.log(`[GPS Verification] Lat: ${agentLat}, Lng: ${agentLng} -> Au Sénégal: ${isInside}`);
+    return isInside;
   }
 }
