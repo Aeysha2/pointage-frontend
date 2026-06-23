@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, Subject, from, of } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { catchError, map, switchMap, timeout } from 'rxjs/operators';
 import { Visite } from '../models/visite.model';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
+import { environment } from '../../../environments/environment';
 import { 
   collection, 
   query, 
@@ -34,11 +35,18 @@ export class VisiteService {
   }
 
   /**
+   * Vérifie si les clés Firebase configurées dans l'environnement sont les clés fictives par défaut.
+   * Si c'est le cas, l'application bascule automatiquement sur le mode hors-ligne sans tenter d'appels bloquants.
+   */
+  private isDemoKeys(): boolean {
+    return !environment.firebase || environment.firebase.apiKey === 'VOTRE_API_KEY_FIREBASE';
+  }
+
+  /**
    * Initialise le cache local s'il n'existe pas encore.
    */
   private initLocalStorage(): void {
     if (!localStorage.getItem(this.LOCAL_STORAGE_KEY)) {
-      // Données mockées initiales pour le premier test
       const mockInitiales: Visite[] = [
         {
           id: 'visite_demo_1',
@@ -50,7 +58,7 @@ export class VisiteService {
           duree_totale: null,
           direction: 'Direction Générale',
           service: 'Ressources Humaines',
-          gps_entree: { lat: 48.8566, lng: 2.3522 },
+          gps_entree: { lat: 14.7167, lng: -17.4677 }, // Dakar, Sénégal
           gps_sortie: null,
           statut: 'en_cours',
           id_agent: '1'
@@ -73,28 +81,31 @@ export class VisiteService {
 
   /**
    * Enregistre l'entrée d'un nouveau visiteur.
-   * Cascade de secours (Fallback) :
-   * 1. Tente Laravel (API).
-   * 2. Si échec, tente Firestore (Direct Cloud).
-   * 3. Si échec (clés de démo ou règles Firestore strictes), enregistre en mémoire locale (LocalStorage).
+   * Ajout de timeouts RxJS de 2.5 secondes pour éviter le gel de la promesse Firestore.
    */
   createVisite(visite: Visite): Observable<Visite> {
     return this.http.post<any>(this.API_URL, visite, { headers: this.getHeaders() }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        // En cas d'échec de Laravel (Code 0 réseau ou autre)
-        console.warn('Backend Laravel inaccessible, bascule sur Firestore...');
-        
+      timeout(2500), // Si Laravel met plus de 2.5s à répondre, déclencher le catchError
+      catchError((error) => {
+        console.warn('Backend Laravel injoignable ou trop lent. Passage au niveau de secours...');
+
+        // Si nous utilisons des clés de démonstration, bypass immédiat sans interroger Firestore
+        if (this.isDemoKeys()) {
+          console.log('[Mode Démo] Clés Firebase par défaut détectées. Sauvegarde locale directe.');
+          return this.saveToLocalStorage(visite);
+        }
+
         const db = this.firebaseService.getFirestore();
         if (!db) {
-          // Si pas de Firestore disponible, bascule immédiate sur LocalStorage
           return this.saveToLocalStorage(visite);
         }
 
         const visitesCollection = collection(db, 'visites');
         return from(addDoc(visitesCollection, visite)).pipe(
+          timeout(2500), // Timeout sur Firestore en cas de droit refusé ou attente de connexion
           map((docRef) => ({ ...visite, id: docRef.id })),
           catchError((fsError) => {
-            console.warn('Firestore inaccessible ou accès refusé par les règles de sécurité. Sauvegarde en mémoire locale (LocalStorage)...');
+            console.warn('Firestore inaccessible ou accès refusé. Sauvegarde en mémoire locale (LocalStorage)...');
             return this.saveToLocalStorage(visite);
           })
         );
@@ -104,18 +115,20 @@ export class VisiteService {
 
   /**
    * Clôture la visite d'un visiteur à la sortie.
-   * Cascade de secours (Fallback) :
-   * 1. Tente Laravel.
-   * 2. Si échec, tente Firestore.
-   * 3. Si échec, clôture dans le LocalStorage.
    */
   closeVisite(idVisiteur: string, gpsSortie: { lat: number, lng: number }): Observable<any> {
     const payload = { gps_sortie: gpsSortie };
     
     return this.http.put<any>(`${this.API_URL}/${idVisiteur}/close`, payload, { headers: this.getHeaders() }).pipe(
-      catchError((error: HttpErrorResponse) => {
-        console.warn('Backend Laravel inaccessible, bascule sur la clôture Firestore...');
-        
+      timeout(2500),
+      catchError((error) => {
+        console.warn('Backend Laravel injoignable ou trop lent. Passage à la clôture Firestore...');
+
+        if (this.isDemoKeys()) {
+          console.log('[Mode Démo] Clôture locale directe dans le LocalStorage.');
+          return this.closeInLocalStorage(idVisiteur, gpsSortie);
+        }
+
         const db = this.firebaseService.getFirestore();
         if (!db) {
           return this.closeInLocalStorage(idVisiteur, gpsSortie);
@@ -125,6 +138,7 @@ export class VisiteService {
         const q = query(visitesCollection, where('id_visiteur', '==', idVisiteur), where('statut', '==', 'en_cours'));
 
         return from(getDocs(q)).pipe(
+          timeout(2500),
           switchMap((snapshot) => {
             if (snapshot.empty) {
               return this.closeInLocalStorage(idVisiteur, gpsSortie);
@@ -145,6 +159,7 @@ export class VisiteService {
             });
 
             return from(updatePromise).pipe(
+              timeout(2500),
               map(() => true),
               catchError(() => this.closeInLocalStorage(idVisiteur, gpsSortie))
             );
@@ -157,13 +172,11 @@ export class VisiteService {
 
   /**
    * Écoute en temps réel les visites actives ("en_cours") pour l'agent connecté.
-   * Combine les données Firestore et celles du cache local (LocalStorage).
    */
   streamVisiteEnCours(agentId: string): Observable<Visite[]> {
     const visitesSubject = new Subject<Visite[]>();
     const db = this.firebaseService.getFirestore();
     
-    // Récupère les données en cours du LocalStorage de secours
     const getLocalActiveVisites = (): Visite[] => {
       const localData = localStorage.getItem(this.LOCAL_STORAGE_KEY);
       if (localData) {
@@ -173,10 +186,9 @@ export class VisiteService {
       return [];
     };
 
-    if (!db) {
-      // Si Firebase n'est pas initialisé, on renvoie directement le cache local de secours
-      console.warn('Firestore indisponible. Utilisation exclusive du cache local (LocalStorage).');
-      // Petit délai pour simuler le chargement asynchrone
+    // Si clés de démo ou Firestore non connecté, on utilise le mode hors-ligne direct
+    if (!db || this.isDemoKeys()) {
+      console.log('[Mode Démo] Utilisation exclusive du stockage LocalStorage.');
       setTimeout(() => {
         visitesSubject.next(getLocalActiveVisites());
       }, 100);
@@ -190,7 +202,6 @@ export class VisiteService {
       where('id_agent', '==', agentId)
     );
 
-    // Écoute temps réel
     const unsubscribe: Unsubscribe = onSnapshot(q, (snapshot) => {
       const dbVisites: Visite[] = [];
       snapshot.forEach((doc) => {
@@ -212,18 +223,16 @@ export class VisiteService {
         });
       });
 
-      // Fusionner avec les visites de secours créées en LocalStorage
       const localVisites = getLocalActiveVisites();
       const fusion = [...dbVisites, ...localVisites];
       
-      // Dédupliquer par id_visiteur (si un document a été écrit sur les deux supports)
       const unique = fusion.filter((v, index, self) =>
         index === self.findIndex((t) => t.id_visiteur === v.id_visiteur)
       );
 
       visitesSubject.next(unique);
     }, (error) => {
-      console.warn('Erreur Firestore ou permission refusée. Utilisation exclusive du cache LocalStorage.');
+      console.warn('Flux Firestore interrompu ou bloqué. Utilisation exclusive du LocalStorage.');
       visitesSubject.next(getLocalActiveVisites());
     });
 
@@ -232,7 +241,6 @@ export class VisiteService {
 
   /**
    * Récupère l'historique complet.
-   * Tente d'abord Laravel, puis Firestore, puis fallback sur LocalStorage.
    */
   getHistorique(): Observable<Visite[]> {
     const getLocalFinishedVisites = (): Visite[] => {
@@ -241,9 +249,14 @@ export class VisiteService {
     };
 
     return this.http.get<any>(`${this.API_URL}/historique`, { headers: this.getHeaders() }).pipe(
+      timeout(2500),
       catchError(() => {
-        console.warn('Laravel hors ligne pour l\'historique, bascule sur Firestore...');
+        console.warn('Laravel hors ligne, bascule de l\'historique vers Firebase ou LocalStorage...');
         
+        if (this.isDemoKeys()) {
+          return of(getLocalFinishedVisites());
+        }
+
         const db = this.firebaseService.getFirestore();
         if (!db) {
           return of(getLocalFinishedVisites());
@@ -253,6 +266,7 @@ export class VisiteService {
         const q = query(visitesCollection, where('statut', '==', 'termine'));
 
         return from(getDocs(q)).pipe(
+          timeout(2500),
           map((snapshot) => {
             const dbVisites: Visite[] = [];
             snapshot.forEach((doc) => {
@@ -285,10 +299,6 @@ export class VisiteService {
     );
   }
 
-  // =========================================================================
-  // MÉTHODES ASSISTANTES DE STOCKAGE LOCAL DE SECOURS (LOCAL STORAGE MOCK)
-  // =========================================================================
-
   private saveToLocalStorage(visite: Visite): Observable<Visite> {
     try {
       const localData = localStorage.getItem(this.LOCAL_STORAGE_KEY);
@@ -302,9 +312,10 @@ export class VisiteService {
       visites.push(nouvelleVisite);
       localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(visites));
       
+      console.log('[LocalStorage] Enregistrement réussi :', nouvelleVisite);
       return of(nouvelleVisite);
     } catch (e) {
-      return throwError(() => new Error('Échec du stockage local et distant.'));
+      return throwError(() => new Error('Échec du stockage local.'));
     }
   }
 
@@ -332,6 +343,7 @@ export class VisiteService {
         };
 
         localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(visites));
+        console.log('[LocalStorage] Clôture réussie de la visite :', visites[index]);
         return of(true);
       }
       return of(false);
