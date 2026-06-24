@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Html5Qrcode } from 'html5-qrcode';
 import { GeolocationService } from '../../core/services/geolocation.service';
 import { VisiteService } from '../../core/services/visite.service';
@@ -11,18 +12,19 @@ import { timeout } from 'rxjs';
 @Component({
   selector: 'app-scan-entree',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule],
   templateUrl: './scan-entree.component.html',
   styleUrls: ['./scan-entree.component.scss']
 })
 export class ScanEntreeComponent implements OnInit, OnDestroy, AfterViewInit {
   private html5Qrcode!: Html5Qrcode;
-  private readonly READER_ELEMENT_ID = 'qr-reader';
+  private readonly READER_ELEMENT_ID = 'cni-reader';
   
   // États de l'interface
   scannerActive = false;
   loading = false;
   gpsAcquiring = false;
+  ocrSuccessAnimation = false;
   
   // Messages utilisateur
   errorMessage: string | null = null;
@@ -30,7 +32,66 @@ export class ScanEntreeComponent implements OnInit, OnDestroy, AfterViewInit {
   gpsPermissionError = false;
   successMessage: string | null = null;
 
+  // Formulaire d'entrée
+  entreeForm!: FormGroup;
+
+  // Modèle des statuts de visiteurs
+  statutsVisiteurs = [
+    { value: 'Particulier', label: 'Particulier / RDV' },
+    { value: 'Prestataire', label: 'Prestataire de Service' },
+    { value: 'Officiel', label: 'Visiteur Officiel / Délégation' },
+    { value: 'Journaliste', label: 'Journaliste / Médias' },
+    { value: 'Autre', label: 'Autre' }
+  ];
+
+  // Structure des destinations sur 3 niveaux
+  destinations = [
+    {
+      direction: 'Direction des Ressources Humaines (DRH)',
+      services: [
+        {
+          name: 'Gestion des Carrières',
+          divisions: ['Évaluation & Promotion', 'Retraites & Affaires Sociales', 'Mouvements de Personnel']
+        },
+        {
+          name: 'Recrutement & Intégration',
+          divisions: ['Cadres et Assimilés', 'Personnel d\'Appui', 'Stagiaires & Alternances']
+        }
+      ]
+    },
+    {
+      direction: 'Direction des Systèmes d\'Information (DSI)',
+      services: [
+        {
+          name: 'Études et Développements',
+          divisions: ['Pôle Web/Mobile', 'Pôle ERP', 'Assurance Qualité / Testing']
+        },
+        {
+          name: 'Infrastructures & Réseaux',
+          divisions: ['Sécurité Réseau', 'Support Technique', 'Systèmes Cloud']
+        }
+      ]
+    },
+    {
+      direction: 'Direction des Moyens Généraux (DMG)',
+      services: [
+        {
+          name: 'Logistique & Transports',
+          divisions: ['Gestion du Parc Auto', 'Planification des Chauffeurs']
+        },
+        {
+          name: 'Maintenance des Bâtiments',
+          divisions: ['Fluides et Énergies', 'Second Œuvre & Rénovation', 'Espaces Verts']
+        }
+      ]
+    }
+  ];
+
+  availableServices: any[] = [];
+  availableDivisions: string[] = [];
+
   constructor(
+    private fb: FormBuilder,
     private router: Router,
     private geolocationService: GeolocationService,
     private visiteService: VisiteService,
@@ -38,200 +99,265 @@ export class ScanEntreeComponent implements OnInit, OnDestroy, AfterViewInit {
   ) {}
 
   ngOnInit(): void {
-    // Vérification de sécurité rapide
     if (!this.authService.isAuthenticated()) {
       this.router.navigate(['/login']);
+      return;
     }
+
+    // Initialisation du formulaire
+    this.entreeForm = this.fb.group({
+      prenom_visiteur: ['', Validators.required],
+      nom_visiteur: ['', Validators.required],
+      numero_cni: ['', [Validators.required, Validators.pattern('^[0-9a-zA-Z\\s-]{6,15}$')]],
+      statut_visiteur: ['', Validators.required],
+      but_visite: ['', Validators.required],
+      direction: ['', Validators.required],
+      service: [{ value: '', disabled: true }, Validators.required],
+      division: [{ value: '', disabled: true }, Validators.required]
+    });
   }
 
   ngAfterViewInit(): void {
-    // L'élément DOM est disponible, on peut initialiser le lecteur QR
-    this.initScanner();
+    // Initialisation différée si l'agent active le scanner caméra
   }
 
   ngOnDestroy(): void {
     this.stopScanner();
   }
 
-  /**
-   * Initialise le lecteur de QR Code html5-qrcode
-   */
-  private initScanner(): void {
-    try {
-      this.html5Qrcode = new Html5Qrcode(this.READER_ELEMENT_ID);
-      this.startScanner();
-    } catch (e) {
-      this.errorMessage = 'Erreur lors de l\'initialisation du scanner vidéo.';
-    }
+  get f() {
+    return this.entreeForm.controls;
   }
 
   /**
-   * Démarre la capture de flux vidéo et la détection du QR Code
+   * Se déclenche lors du changement de Direction (Niveau 1)
    */
-  startScanner(): void {
+  onDirectionChange(): void {
+    const dirVal = this.entreeForm.get('direction')?.value;
+    if (dirVal) {
+      const match = this.destinations.find(d => d.direction === dirVal);
+      this.availableServices = match ? match.services : [];
+      this.entreeForm.get('service')?.enable();
+    } else {
+      this.availableServices = [];
+      this.entreeForm.get('service')?.disable();
+    }
+    
+    // Reset les sous-niveaux
+    this.entreeForm.get('service')?.setValue('');
+    this.entreeForm.get('division')?.setValue('');
+    this.entreeForm.get('division')?.disable();
+    this.availableDivisions = [];
+  }
+
+  /**
+   * Se déclenche lors du changement de Service (Niveau 2)
+   */
+  onServiceChange(): void {
+    const srvVal = this.entreeForm.get('service')?.value;
+    if (srvVal) {
+      const match = this.availableServices.find(s => s.name === srvVal);
+      this.availableDivisions = match ? match.divisions : [];
+      this.entreeForm.get('division')?.enable();
+    } else {
+      this.availableDivisions = [];
+      this.entreeForm.get('division')?.disable();
+    }
+    
+    this.entreeForm.get('division')?.setValue('');
+  }
+
+  /**
+   * Active la caméra pour scanner la pièce d'identité CNI
+   */
+  activerScannerCNI(): void {
     this.errorMessage = null;
     this.cameraPermissionError = false;
     this.scannerActive = true;
 
-    this.html5Qrcode.start(
-      { facingMode: 'environment' }, // Caméra arrière
-      {
-        fps: 10,
-        qrbox: (width, height) => {
-          // Cadre de scan dynamique et proportionnel
-          const size = Math.min(width, height) * 0.7;
-          return { width: size, height: size };
-        }
-      },
-      (decodedText) => {
-        // En cas de scan réussi
-        this.handleQrCodeSuccess(decodedText);
-      },
-      (error) => {
-        // Erreurs d'analyse continue (ignorées pour éviter de polluer les logs)
+    // Laisser un court délai pour que le conteneur DOM soit injecté
+    setTimeout(() => {
+      try {
+        this.html5Qrcode = new Html5Qrcode(this.READER_ELEMENT_ID);
+        this.html5Qrcode.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: (width, height) => {
+              // Cadre rectangulaire de type carte d'identité
+              return { width: width * 0.85, height: height * 0.45 };
+            }
+          },
+          (decodedText) => {
+            // Dans ce module, on peut scanner soit un QR imprimé sur la carte, soit simuler l'OCR
+            this.handleOcrSuccess(decodedText);
+          },
+          (error) => {
+            // Analyse continue
+          }
+        ).catch((err) => {
+          this.scannerActive = false;
+          this.cameraPermissionError = true;
+          this.errorMessage = 'Accès à la caméra refusé. Veuillez activer les permissions.';
+        });
+      } catch (e) {
+        this.errorMessage = 'Impossible d\'initialiser le capteur vidéo.';
+        this.scannerActive = false;
       }
-    ).catch((err) => {
-      this.scannerActive = false;
-      this.cameraPermissionError = true;
-      this.errorMessage = 'Accès à la caméra refusé. Veuillez autoriser l\'accès dans les paramètres du navigateur.';
-    });
+    }, 100);
   }
 
   /**
-   * Arrête la caméra et le scanner
+   * Désactive le scanner caméra
    */
+  annulerScanner(): void {
+    this.stopScanner().then(() => {
+      this.scannerActive = false;
+    });
+  }
+
   private stopScanner(): Promise<void> {
     if (this.html5Qrcode && this.html5Qrcode.isScanning) {
-      this.scannerActive = false;
       return this.html5Qrcode.stop();
     }
     return Promise.resolve();
   }
 
   /**
-   * Traite les données du QR code scanné
-   * 
-   * @param qrContent Texte brut extrait du QR Code
+   * Simule la capture instantanée de l'OCR de la pièce d'identité CNI
    */
-  private handleQrCodeSuccess(qrContent: string): void {
-    // Arrêter le scanner immédiatement pour éviter les scans multiples
+  simulerCaptureCNI(): void {
+    // Simuler des données sénégalaises typiques
+    const prenomFictif = ['Moustapha', 'Awa', 'Ousmane', 'Mariama', 'Cheikh', 'Binetou'][Math.floor(Math.random() * 6)];
+    const nomFictif = ['Diagne', 'Sall', 'Sow', 'Fall', 'Diallo', 'Gaye'][Math.floor(Math.random() * 6)];
+    const numCniFictif = '1' + Math.floor(100000000 + Math.random() * 900000000).toString();
+
     this.stopScanner().then(() => {
-      this.loading = true;
-      this.errorMessage = null;
+      this.scannerActive = false;
       
-      let parsedData: any;
-      try {
-        parsedData = JSON.parse(qrContent);
-      } catch (e) {
-        this.errorMessage = 'QR Code invalide. Il doit être au format JSON.';
-        this.loading = false;
-        return;
-      }
+      // Injection automatique ("Boum !")
+      this.entreeForm.patchValue({
+        prenom_visiteur: prenomFictif,
+        nom_visiteur: nomFictif,
+        numero_cni: numCniFictif
+      });
 
-      // Validation minimale des données JSON requises
-      if (!parsedData.id_visiteur || !parsedData.nom_visiteur || !parsedData.service) {
-        this.errorMessage = 'Le QR Code ne contient pas les informations requises (id_visiteur, nom_visiteur, service).';
-        this.loading = false;
-        return;
-      }
-
-      // Validation du GPS
-      this.verifyGpsAndCreateVisite(parsedData);
+      // Lancement de l'animation visuelle de remplissage "Boum !"
+      this.ocrSuccessAnimation = true;
+      setTimeout(() => {
+        this.ocrSuccessAnimation = false;
+      }, 1800);
     });
   }
 
   /**
-   * Simule un scan de QR Code de test pour les environnements de dev
+   * Extraction des données CNI (si format texte décodé)
    */
-  simulateScan(): void {
-    const mockQrData = JSON.stringify({
-      id_visiteur: 'VIS-7742',
-      nom_visiteur: 'Marc Lambert',
-      service: 'Recherche & Développement',
-      direction: 'R&D'
-    });
-    this.handleQrCodeSuccess(mockQrData);
+  private handleOcrSuccess(text: string): void {
+    // Si c'est un format de badge QR pré-configuré, on extrait les champs
+    try {
+      const data = JSON.parse(text);
+      this.stopScanner().then(() => {
+        this.scannerActive = false;
+        this.entreeForm.patchValue({
+          prenom_visiteur: data.prenom || data.prenom_visiteur || '',
+          nom_visiteur: data.nom || data.nom_visiteur || '',
+          numero_cni: data.cni || data.numero_cni || text
+        });
+
+        this.ocrSuccessAnimation = true;
+        setTimeout(() => this.ocrSuccessAnimation = false, 1800);
+      });
+    } catch (e) {
+      // Si c'est du texte simple (ex: numéro CNI seul), on remplit le numéro de CNI
+      this.stopScanner().then(() => {
+        this.scannerActive = false;
+        this.entreeForm.patchValue({
+          numero_cni: text.trim()
+        });
+        this.ocrSuccessAnimation = true;
+        setTimeout(() => this.ocrSuccessAnimation = false, 1800);
+      });
+    }
   }
 
   /**
-   * Récupère la géolocalisation et valide la distance
-   * avant d'enregistrer la visite.
-   * 
-   * @param visitorData Données validées du visiteur
+   * Valide le formulaire et enregistre le pointage d'entrée
    */
-  private verifyGpsAndCreateVisite(visitorData: any): void {
+  onSubmit(): void {
+    if (this.entreeForm.invalid) {
+      this.entreeForm.markAllAsTouched();
+      return;
+    }
+
+    this.loading = true;
+    this.errorMessage = null;
     this.gpsAcquiring = true;
-    this.gpsPermissionError = false;
 
+    // Étape 1 : Obtenir la géolocalisation et valider la présence géographique au Sénégal
     this.geolocationService.getCurrentPosition().pipe(
-      timeout(5000)
+      timeout(6000)
     ).subscribe({
       next: (position) => {
         this.gpsAcquiring = false;
         
-        // Calcul de la distance
-        const distance = this.geolocationService.calculateDistance(position.latitude, position.longitude);
-        const insideRadius = this.geolocationService.isWithinAllowedRadius(position.latitude, position.longitude);
+        const isInsideSenegal = this.geolocationService.isWithinAllowedRadius(position.latitude, position.longitude);
 
-        if (!insideRadius) {
-          this.errorMessage = "Pointage impossible. Vous devez être localisé géographiquement au Sénégal pour valider ce pointage.";
+        if (!isInsideSenegal) {
+          this.errorMessage = "Pointage impossible. Vous devez être géolocalisé au Sénégal pour enregistrer une visite.";
           this.loading = false;
           return;
         }
 
-        // Création de l'objet Visite conforme
+        // Étape 2 : Constituer l'objet Visite
         const agent = this.authService.getAgentProfile();
+        const rawForm = this.entreeForm.getRawValue();
+
         const nouvelleVisite: Visite = {
-          id_visiteur: visitorData.id_visiteur,
-          nom_visiteur: visitorData.nom_visiteur,
-          service: visitorData.service,
-          direction: visitorData.direction || 'Non spécifié',
+          id_visiteur: rawForm.numero_cni, // Utiliser la CNI comme identifiant de visiteur
+          prenom_visiteur: rawForm.prenom_visiteur,
+          nom_visiteur: rawForm.nom_visiteur,
+          numero_cni: rawForm.numero_cni,
+          statut_visiteur: rawForm.statut_visiteur,
+          but_visite: rawForm.but_visite,
+          direction: rawForm.direction,
+          service: rawForm.service,
+          division: rawForm.division,
           date: new Date().toISOString().split('T')[0],
-          heure_entree: new Date().toISOString(),
+          heure_entree: new Date().toISOString(), // Horodatage automatique
           heure_sortie: null,
           duree_totale: null,
           gps_entree: { lat: position.latitude, lng: position.longitude },
           gps_sortie: null,
           statut: 'en_cours',
-          id_agent: agent ? agent.id.toString() : '0'
+          id_agent: agent ? agent.id.toString() : '1'
         };
 
-        // Soumission au serveur
+        // Étape 3 : Envoyer au backend/Firestore
         this.visiteService.createVisite(nouvelleVisite).subscribe({
-          next: (visiteEnregistree) => {
+          next: (visiteCreated) => {
             this.loading = false;
-            this.successMessage = `Entrée enregistrée avec succès pour ${visiteEnregistree.nom_visiteur}.`;
+            this.successMessage = `L'entrée de ${visiteCreated.prenom_visiteur} ${visiteCreated.nom_visiteur} a été enregistrée avec succès.`;
             
-            // Redirection après 2 secondes vers la page d'accueil
+            // Redirection après 2.2s vers l'accueil
             setTimeout(() => {
               this.router.navigate(['/home']);
-            }, 2000);
+            }, 2200);
           },
           error: (err) => {
             this.loading = false;
-            this.errorMessage = `Erreur de communication avec le serveur : ${err.message}`;
+            this.errorMessage = `Impossible d'enregistrer la visite sur le serveur : ${err.message}`;
           }
         });
       },
-      error: (err: any) => {
+      error: (err) => {
         this.gpsAcquiring = false;
         this.loading = false;
         this.gpsPermissionError = true;
         this.errorMessage = err.name === 'TimeoutError'
-          ? "L'acquisition GPS a expiré (5s). Veuillez autoriser la localisation ou réessayer."
-          : err.message;
+          ? "Le délai d'acquisition de la position GPS a expiré (6s). Veuillez actualiser ou activer votre GPS."
+          : `Erreur d'acquisition de localisation : ${err.message}`;
       }
     });
-  }
-
-  /**
-   * Permet à l'agent de relancer le scanner après une erreur
-   */
-  retryScan(): void {
-    this.errorMessage = null;
-    this.successMessage = null;
-    this.cameraPermissionError = false;
-    this.gpsPermissionError = false;
-    this.startScanner();
   }
 }

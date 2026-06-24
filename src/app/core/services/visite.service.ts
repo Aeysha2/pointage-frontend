@@ -50,18 +50,43 @@ export class VisiteService {
       const mockInitiales: Visite[] = [
         {
           id: 'visite_demo_1',
-          id_visiteur: 'VIS-9921',
-          nom_visiteur: 'Jean Dupont',
+          id_visiteur: '10928374',
+          prenom_visiteur: 'Jean',
+          nom_visiteur: 'Dupont',
+          numero_cni: '10928374',
+          statut_visiteur: 'Particulier',
+          but_visite: 'Entretien de recrutement',
+          direction: 'Ressources Humaines',
+          service: 'Recrutement',
+          division: 'Cadres et Assimilés',
           date: new Date().toISOString().split('T')[0],
           heure_entree: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
           heure_sortie: null,
           duree_totale: null,
-          direction: 'Direction Générale',
-          service: 'Ressources Humaines',
           gps_entree: { lat: 14.7167, lng: -17.4677 }, // Dakar, Sénégal
           gps_sortie: null,
           statut: 'en_cours',
           id_agent: '1'
+        },
+        {
+          id: 'visite_demo_2',
+          id_visiteur: '20938475',
+          prenom_visiteur: 'Fatou',
+          nom_visiteur: 'Ndiaye',
+          numero_cni: '20938475',
+          statut_visiteur: 'Prestataire',
+          but_visite: 'Maintenance climatisation',
+          direction: 'Moyens Généraux',
+          service: 'Maintenance des Bâtiments',
+          division: 'Fluides et Énergies',
+          date: new Date().toISOString().split('T')[0],
+          heure_entree: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+          heure_sortie: null,
+          duree_totale: null,
+          gps_entree: { lat: 14.7167, lng: -17.4677 }, // Dakar, Sénégal
+          gps_sortie: null,
+          statut: 'en_cours',
+          id_agent: '2'
         }
       ];
       localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(mockInitiales));
@@ -171,17 +196,20 @@ export class VisiteService {
   }
 
   /**
-   * Écoute en temps réel les visites actives ("en_cours") pour l'agent connecté.
+   * Écoute en temps réel les visites actives ("en_cours") pour l'agent connecté ou pour tout le monde (admin).
    */
   streamVisiteEnCours(agentId: string): Observable<Visite[]> {
     const visitesSubject = new Subject<Visite[]>();
     const db = this.firebaseService.getFirestore();
+    const agent = this.authService.getAgentProfile();
+    const isAdmin = agent?.role === 'admin';
     
     const getLocalActiveVisites = (): Visite[] => {
       const localData = localStorage.getItem(this.LOCAL_STORAGE_KEY);
       if (localData) {
         const parsed: Visite[] = JSON.parse(localData);
-        return parsed.filter(v => v.statut === 'en_cours' && v.id_agent === agentId);
+        // Si admin, il voit tout. Si agent simple, il ne voit que ses visites.
+        return parsed.filter(v => v.statut === 'en_cours' && (isAdmin || v.id_agent === agentId));
       }
       return [];
     };
@@ -196,11 +224,13 @@ export class VisiteService {
     }
 
     const visitesCollection = collection(db, 'visites');
-    const q = query(
-      visitesCollection, 
-      where('statut', '==', 'en_cours'),
-      where('id_agent', '==', agentId)
-    );
+    
+    // Déterminer la requête Firestore en fonction du rôle
+    const constraints = [where('statut', '==', 'en_cours')];
+    if (!isAdmin) {
+      constraints.push(where('id_agent', '==', agentId));
+    }
+    const q = query(visitesCollection, ...constraints);
 
     const unsubscribe: Unsubscribe = onSnapshot(q, (snapshot) => {
       const dbVisites: Visite[] = [];
@@ -209,13 +239,18 @@ export class VisiteService {
         dbVisites.push({
           id: doc.id,
           id_visiteur: data['id_visiteur'],
+          prenom_visiteur: data['prenom_visiteur'] || '',
           nom_visiteur: data['nom_visiteur'],
+          numero_cni: data['numero_cni'] || '',
+          statut_visiteur: data['statut_visiteur'] || 'Visiteur',
+          but_visite: data['but_visite'] || '',
+          direction: data['direction'],
+          service: data['service'],
+          division: data['division'] || '',
           date: data['date'],
           heure_entree: data['heure_entree'],
           heure_sortie: data['heure_sortie'],
           duree_totale: data['duree_totale'],
-          direction: data['direction'],
-          service: data['service'],
           gps_entree: data['gps_entree'],
           gps_sortie: data['gps_sortie'],
           statut: data['statut'],
@@ -240,12 +275,21 @@ export class VisiteService {
   }
 
   /**
-   * Récupère l'historique complet.
+   * Récupère l'historique complet filtré selon le rôle de l'agent.
    */
   getHistorique(): Observable<Visite[]> {
+    const agent = this.authService.getAgentProfile();
+    const isAdmin = agent?.role === 'admin';
+    const agentId = agent ? agent.id.toString() : '0';
+
     const getLocalFinishedVisites = (): Visite[] => {
       const localData = localStorage.getItem(this.LOCAL_STORAGE_KEY);
-      return localData ? JSON.parse(localData).filter((v: Visite) => v.statut === 'termine') : [];
+      if (localData) {
+        const parsed = JSON.parse(localData);
+        // Si admin, il voit tout l'historique. Si agent, seulement son historique de garde.
+        return parsed.filter((v: Visite) => v.statut === 'termine' && (isAdmin || v.id_agent === agentId));
+      }
+      return [];
     };
 
     return this.http.get<any>(`${this.API_URL}/historique`, { headers: this.getHeaders() }).pipe(
@@ -263,7 +307,13 @@ export class VisiteService {
         }
 
         const visitesCollection = collection(db, 'visites');
-        const q = query(visitesCollection, where('statut', '==', 'termine'));
+        
+        // Déterminer la requête Firestore en fonction du rôle
+        const constraints = [where('statut', '==', 'termine')];
+        if (!isAdmin) {
+          constraints.push(where('id_agent', '==', agentId));
+        }
+        const q = query(visitesCollection, ...constraints);
 
         return from(getDocs(q)).pipe(
           timeout(2500),
@@ -274,13 +324,18 @@ export class VisiteService {
               dbVisites.push({
                 id: doc.id,
                 id_visiteur: data['id_visiteur'],
+                prenom_visiteur: data['prenom_visiteur'] || '',
                 nom_visiteur: data['nom_visiteur'],
+                numero_cni: data['numero_cni'] || '',
+                statut_visiteur: data['statut_visiteur'] || 'Visiteur',
+                but_visite: data['but_visite'] || '',
+                direction: data['direction'],
+                service: data['service'],
+                division: data['division'] || '',
                 date: data['date'],
                 heure_entree: data['heure_entree'],
                 heure_sortie: data['heure_sortie'],
                 duree_totale: data['duree_totale'],
-                direction: data['direction'],
-                service: data['service'],
                 gps_entree: data['gps_entree'],
                 gps_sortie: data['gps_sortie'],
                 statut: data['statut'],

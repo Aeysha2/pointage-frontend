@@ -142,26 +142,30 @@ export class HistoriqueComponent implements OnInit {
       return;
     }
 
-    // En-têtes des colonnes CSV
+    // En-têtes des colonnes CSV de luxe enrichis
     const headers = [
-      'ID Visiteur', 'Nom Visiteur', 'Date', 'Heure Entrée', 
-      'Heure Sortie', 'Durée (min)', 'Direction', 'Service', 
-      'Statut', 'GPS Entrée Lat', 'GPS Entrée Lng', 
-      'GPS Sortie Lat', 'GPS Sortie Lng'
+      'CNI', 'Prénom', 'Nom', 'Statut Visiteur', 'But Visite', 
+      'Direction', 'Service', 'Division', 'Date', 'Heure Entrée', 
+      'Heure Sortie', 'Durée (min)', 'ID Agent',
+      'GPS Entrée Lat', 'GPS Entrée Lng', 'GPS Sortie Lat', 'GPS Sortie Lng'
     ];
 
     // Construction du contenu des lignes
     const csvRows = this.filteredVisites.map(v => {
       return [
-        `"${v.id_visiteur}"`,
-        `"${v.nom_visiteur.replace(/"/g, '""')}"`, // Échapper les guillemets
+        `"${v.numero_cni}"`,
+        `"${(v.prenom_visiteur || '').replace(/"/g, '""')}"`,
+        `"${v.nom_visiteur.replace(/"/g, '""')}"`,
+        `"${(v.statut_visiteur || 'Visiteur').replace(/"/g, '""')}"`,
+        `"${(v.but_visite || '').replace(/"/g, '""')}"`,
+        `"${v.direction.replace(/"/g, '""')}"`,
+        `"${v.service.replace(/"/g, '""')}"`,
+        `"${(v.division || '').replace(/"/g, '""')}"`,
         `"${v.date}"`,
         `"${v.heure_entree}"`,
         `"${v.heure_sortie || ''}"`,
         v.duree_totale !== null ? v.duree_totale : '',
-        `"${v.direction.replace(/"/g, '""')}"`,
-        `"${v.service.replace(/"/g, '""')}"`,
-        `"${v.statut}"`,
+        `"${v.id_agent}"`,
         v.gps_entree.lat,
         v.gps_entree.lng,
         v.gps_sortie ? v.gps_sortie.lat : '',

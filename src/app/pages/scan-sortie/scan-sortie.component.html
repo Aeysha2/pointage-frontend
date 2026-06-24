@@ -2,36 +2,80 @@
   
   <!-- En-tête de page -->
   <header class="scan-header">
-    <a routerLink="/home" class="btn-back" aria-label="Retour à l'accueil">
+    <a routerLink="/home" class="btn-back" aria-label="Retour à l'accueil" *ngIf="!loading && !visiteCloturee">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="back-icon">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
       </svg>
     </a>
-    <h2>Scanner une Sortie</h2>
+    <h2>Contrôle Sortie</h2>
     <div class="header-spacer"></div>
   </header>
 
   <main class="scan-content">
     
-    <!-- Zone de lecture de la caméra (Scanner actif) -->
-    <div class="scanner-wrapper" [class.hidden]="!scannerActive || loading || visiteCloturee">
-      <div id="qr-reader" class="reader-view"></div>
-      
-      <!-- Cadre de ciblage rouge pour marquer la sortie -->
-      <div class="scanner-overlay">
-        <div class="scan-frame">
-          <span class="corner top-left"></span>
-          <span class="corner top-right"></span>
-          <span class="corner bottom-left"></span>
-          <span class="corner bottom-right"></span>
-          <div class="scan-line"></div>
+    <!-- Barre de Recherche et Liste des visiteurs actifs -->
+    <div class="checkout-wrapper" *ngIf="!loading && !visiteCloturee && !errorMessage">
+      <div class="search-box">
+        <div class="input-wrapper">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input 
+            type="text" 
+            placeholder="Rechercher par Nom, Prénom ou CNI..." 
+            (input)="onSearchChange($event)"
+            [value]="searchQuery"
+          />
+        </div>
+        <p class="search-tip">Sélectionnez le visiteur présent devant vous pour clore sa visite définitivement.</p>
+      </div>
+
+      <!-- Liste vide -->
+      <div class="empty-state" *ngIf="getFilteredActiveVisites().length === 0">
+        <div class="empty-icon-wrapper">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <p *ngIf="activeVisites.length === 0">Aucun visiteur n'est actuellement enregistré dans les locaux.</p>
+        <p *ngIf="activeVisites.length > 0">Aucun visiteur actif ne correspond à cette recherche.</p>
+      </div>
+
+      <!-- Liste des cartes de pointage actifs -->
+      <div class="visites-list" *ngIf="getFilteredActiveVisites().length > 0">
+        <div class="visite-card animate-card" *ngFor="let visite of getFilteredActiveVisites()">
+          <div class="card-header">
+            <div class="visitor-meta">
+              <span class="visitor-name">{{ visite.prenom_visiteur }} {{ visite.nom_visiteur }}</span>
+              <span class="visitor-id">CNI: {{ visite.numero_cni }}</span>
+            </div>
+            <span class="badge-status-type">{{ visite.statut_visiteur }}</span>
+          </div>
+          
+          <div class="card-body">
+            <div class="info-row">
+              <div class="info-col">
+                <span class="info-label">Destination</span>
+                <span class="info-val">{{ visite.service }} ({{ visite.direction }})</span>
+              </div>
+              <div class="info-col">
+                <span class="info-label">Arrivée</span>
+                <span class="info-val">{{ visite.heure_entree | date:'HH:mm:ss' }}</span>
+              </div>
+            </div>
+
+            <button type="button" class="btn-checkout-action" (click)="validerSortie(visite)">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <path d="M16 17l5-5-5-5M21 12H9"/>
+              </svg>
+              Valider la sortie de site
+            </button>
+          </div>
         </div>
       </div>
-      <p class="scan-instruction">Positionnez le QR Code du visiteur pour sa sortie</p>
-      <button type="button" class="btn-simulate" (click)="simulateScan()">
-        Simuler un scan (Badge de Test)
-      </button>
     </div>
 
     <!-- Écran d'acquisition GPS ou enregistrement API (Loading) -->
@@ -40,36 +84,34 @@
         <div class="double-bounce1"></div>
         <div class="double-bounce2"></div>
       </div>
-      <h3 *ngIf="gpsAcquiring">Acquisition du signal GPS...</h3>
-      <h3 *ngIf="!gpsAcquiring">Clôture de la visite...</h3>
-      <p class="loading-detail" *ngIf="gpsAcquiring">Vérification de la présence sur site (max 200m)</p>
-      <p class="loading-detail" *ngIf="!gpsAcquiring">Calcul de la durée de présence globale</p>
+      <h3 *ngIf="gpsAcquiring">Acquisition de position...</h3>
+      <h3 *ngIf="!gpsAcquiring">Enregistrement de la sortie...</h3>
+      <p class="loading-detail" *ngIf="gpsAcquiring">Vérification de présence de l'agent au Sénégal pour contrôle de validité</p>
+      <p class="loading-detail" *ngIf="!gpsAcquiring">Calcul de la durée de présence et mise à jour du document Firestore</p>
     </div>
 
     <!-- Récapitulatif de la visite clôturée (Succès) -->
-    <div class="status-card summary-card" *ngIf="visiteCloturee">
-      
-      <!-- Badge de statut finalisé -->
+    <div class="status-card summary-card animate-card" *ngIf="visiteCloturee">
       <div class="badge-finished">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="badge-icon">
           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
           <polyline points="22 4 12 14.01 9 11.01"></polyline>
         </svg>
-        <span>VISITE TERMINÉE</span>
+        <span>SORTIE ENREGISTRÉE</span>
       </div>
 
-      <h3>{{ visiteCloturee.nom_visiteur }}</h3>
-      <p class="visitor-sub">ID: {{ visiteCloturee.id_visiteur }}</p>
+      <h3>{{ visiteCloturee.prenom_visiteur }} {{ visiteCloturee.nom_visiteur }}</h3>
+      <p class="visitor-sub">CNI: {{ visiteCloturee.numero_cni }}</p>
 
-      <!-- Fiche détaillée -->
+      <!-- Fiche détaillée de sortie -->
       <div class="summary-details">
         <div class="detail-row">
-          <span class="detail-label">Service visité</span>
-          <span class="detail-value">{{ visiteCloturee.service }} ({{ visiteCloturee.direction }})</span>
+          <span class="detail-label">Destination quittée</span>
+          <span class="detail-value text-right">{{ visiteCloturee.service }} ({{ visiteCloturee.direction }})</span>
         </div>
         
         <div class="detail-row">
-          <span class="detail-label">Date du jour</span>
+          <span class="detail-label">Date</span>
           <span class="detail-value">{{ visiteCloturee.date | date:'dd/MM/yyyy' }}</span>
         </div>
 
@@ -91,19 +133,19 @@
               <circle cx="12" cy="12" r="10"></circle>
               <polyline points="12,6 12,12 16,14"></polyline>
             </svg>
-            <span>Durée totale sur place</span>
+            <span>Présence Globale</span>
           </div>
           <span class="duration-val">{{ visiteCloturee.duree_totale }} min</span>
         </div>
       </div>
 
       <button class="btn-done" (click)="finishFlow()">
-        <span>Valider & Retour</span>
+        <span>Confirmer & Retour</span>
       </button>
     </div>
 
-    <!-- Écran d'erreur et aide à la résolution -->
-    <div class="status-card error-card" *ngIf="errorMessage && !loading && !visiteCloturee">
+    <!-- Écran d'erreur -->
+    <div class="status-card error-card animate-card" *ngIf="errorMessage && !loading && !visiteCloturee">
       <div class="error-icon-wrapper">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="error-icon">
           <circle cx="12" cy="12" r="10"></circle>
@@ -111,24 +153,11 @@
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
         </svg>
       </div>
-      <h3>Clôture impossible</h3>
+      <h3>Pointage Impossible</h3>
       <p class="error-text">{{ errorMessage }}</p>
 
-      <!-- Aide caméra / GPS -->
-      <div class="help-section" *ngIf="cameraPermissionError">
-        <h4>Comment activer la caméra ?</h4>
-        <ol>
-          <li>Cliquez sur l'icône de cadenas 🔒 dans la barre d'adresse de votre navigateur.</li>
-          <li>Activez l'autorisation pour la <strong>Caméra</strong>.</li>
-          <li>Actualisez la page et réessayez.</li>
-        </ol>
-      </div>
-
-      <button class="btn-retry" (click)="retryScan()">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="retry-icon">
-          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-        </svg>
-        <span>Réessayer le scan</span>
+      <button class="btn-retry" (click)="errorMessage = null">
+        <span>Réessayer</span>
       </button>
     </div>
 

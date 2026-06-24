@@ -2,36 +2,45 @@
   
   <!-- En-tête de page -->
   <header class="scan-header">
-    <a routerLink="/home" class="btn-back" aria-label="Retour à l'accueil">
+    <a routerLink="/home" class="btn-back" aria-label="Retour à l'accueil" *ngIf="!scannerActive">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="back-icon">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
       </svg>
     </a>
-    <h2>Scanner une Entrée</h2>
+    <h2>Enregistrement Entrée</h2>
     <div class="header-spacer"></div>
   </header>
 
   <main class="scan-content">
     
     <!-- Zone de lecture de la caméra (Scanner actif) -->
-    <div class="scanner-wrapper" [class.hidden]="!scannerActive || loading">
-      <div id="qr-reader" class="reader-view"></div>
+    <div class="scanner-wrapper" *ngIf="scannerActive">
+      <div id="cni-reader" class="reader-view"></div>
       
-      <!-- Cadre animé de ciblage du QR Code -->
+      <!-- Cadre animé de ciblage de la CNI -->
       <div class="scanner-overlay">
-        <div class="scan-frame">
+        <div class="scan-frame cni-frame">
           <span class="corner top-left"></span>
           <span class="corner top-right"></span>
           <span class="corner bottom-left"></span>
           <span class="corner bottom-right"></span>
           <div class="scan-line"></div>
+          <span class="frame-label">Placer la CNI dans le cadre</span>
         </div>
       </div>
-      <p class="scan-instruction">Positionnez le QR Code du visiteur dans le cadre</p>
-      <button type="button" class="btn-simulate" (click)="simulateScan()">
-        Simuler un scan (Badge de Test)
-      </button>
+      
+      <div class="scanner-actions">
+        <button type="button" class="btn-simulate-ocr" (click)="simulerCaptureCNI()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          </svg>
+          Simuler Scan CNI (OCR)
+        </button>
+        <button type="button" class="btn-cancel-scan" (click)="annulerScanner()">
+          Annuler
+        </button>
+      </div>
     </div>
 
     <!-- Écran d'acquisition GPS ou enregistrement API (Loading) -->
@@ -40,26 +49,26 @@
         <div class="double-bounce1"></div>
         <div class="double-bounce2"></div>
       </div>
-      <h3 *ngIf="gpsAcquiring">Acquisition du signal GPS...</h3>
-      <h3 *ngIf="!gpsAcquiring">Enregistrement de la visite...</h3>
-      <p class="loading-detail" *ngIf="gpsAcquiring">Calcul de la distance avec le site (tolérance 200m)</p>
-      <p class="loading-detail" *ngIf="!gpsAcquiring">Échange sécurisé avec le serveur</p>
+      <h3 *ngIf="gpsAcquiring">Vérification de localisation...</h3>
+      <h3 *ngIf="!gpsAcquiring">Validation de la visite...</h3>
+      <p class="loading-detail" *ngIf="gpsAcquiring">Vérification de la présence géographique au Sénégal (Réglementation nationale)</p>
+      <p class="loading-detail" *ngIf="!gpsAcquiring">Synchronisation sécurisée avec la base de données Firestore</p>
     </div>
 
     <!-- Écran de succès -->
-    <div class="status-card success-card" *ngIf="successMessage">
-      <div class="success-icon-wrapper">
+    <div class="status-card success-card animate-card" *ngIf="successMessage">
+      <div class="success-icon-wrapper animate-bounce">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="success-icon">
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
       </div>
-      <h3>Entrée Enregistrée</h3>
+      <h3>Entrée Validée !</h3>
       <p>{{ successMessage }}</p>
-      <span class="redirect-info">Redirection vers l'accueil...</span>
+      <span class="redirect-info">Redirection vers le registre en cours...</span>
     </div>
 
-    <!-- Écran d'erreur et aide à la résolution -->
-    <div class="status-card error-card" *ngIf="errorMessage && !loading && !successMessage">
+    <!-- Écran d'erreur -->
+    <div class="status-card error-card animate-card" *ngIf="errorMessage && !loading && !successMessage">
       <div class="error-icon-wrapper">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="error-icon">
           <circle cx="12" cy="12" r="10"></circle>
@@ -67,34 +76,147 @@
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
         </svg>
       </div>
-      <h3>Une erreur est survenue</h3>
+      <h3>Action Échouée</h3>
       <p class="error-text">{{ errorMessage }}</p>
 
-      <!-- Aide spécifique en fonction de l'erreur -->
-      <div class="help-section" *ngIf="cameraPermissionError">
-        <h4>Comment activer la caméra ?</h4>
-        <ol>
-          <li>Cliquez sur l'icône de cadenas 🔒 dans la barre d'adresse de votre navigateur.</li>
-          <li>Activez l'autorisation pour la <strong>Caméra</strong>.</li>
-          <li>Actualisez la page et réessayez.</li>
-        </ol>
-      </div>
-
       <div class="help-section" *ngIf="gpsPermissionError">
-        <h4>Comment activer le GPS ?</h4>
+        <h4>Résolution Localisation</h4>
         <ol>
-          <li>Assurez-vous que la localisation de votre appareil est activée.</li>
-          <li>Cliquez sur l'icône de cadenas 🔒 ou de paramètres dans votre navigateur.</li>
-          <li>Autorisez le site à accéder à votre <strong>Position géographique</strong>.</li>
+          <li>Autorisez le navigateur à accéder au signal GPS.</li>
+          <li>Assurez-vous d'être présent sur le territoire national du Sénégal.</li>
         </ol>
       </div>
 
-      <button class="btn-retry" (click)="retryScan()">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="retry-icon">
-          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-        </svg>
-        <span>Réessayer le scan</span>
+      <button class="btn-retry-form" (click)="errorMessage = null">
+        <span>Retour au formulaire</span>
       </button>
+    </div>
+
+    <!-- Formulaire d'enregistrement des visiteurs (Affiché par défaut) -->
+    <div class="form-container" *ngIf="!scannerActive && !loading && !successMessage && !errorMessage">
+      
+      <!-- Bouton d'action rapide Scan CNI -->
+      <div class="scan-trigger-box">
+        <button type="button" class="btn-trigger-scan" (click)="activerScannerCNI()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="scan-btn-icon">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          <span>Scanner Pièce d'Identité (CNI)</span>
+        </button>
+        <span class="scan-tip">Remplit automatiquement les champs Prénom, Nom et CNI par reconnaissance optique (OCR).</span>
+      </div>
+
+      <form [formGroup]="entreeForm" (ngSubmit)="onSubmit()" novalidate>
+        
+        <!-- Groupe CNI, Prénom, Nom -->
+        <div class="form-grid">
+          
+          <div class="form-group" [class.ocr-success]="ocrSuccessAnimation" [class.has-error]="f['numero_cni'].touched && f['numero_cni'].invalid">
+            <label for="numero_cni">Numéro CNI</label>
+            <input 
+              type="text" 
+              id="numero_cni" 
+              formControlName="numero_cni" 
+              placeholder="Ex: 1751199302517"
+            />
+            <div class="error-feedback" *ngIf="f['numero_cni'].touched && f['numero_cni'].errors">
+              <span *ngIf="f['numero_cni'].errors['required']">Le numéro de CNI est requis.</span>
+              <span *ngIf="f['numero_cni'].errors['pattern']">Le numéro CNI doit faire entre 6 et 15 caractères.</span>
+            </div>
+          </div>
+
+          <div class="form-group" [class.ocr-success]="ocrSuccessAnimation" [class.has-error]="f['prenom_visiteur'].touched && f['prenom_visiteur'].invalid">
+            <label for="prenom_visiteur">Prénom</label>
+            <input 
+              type="text" 
+              id="prenom_visiteur" 
+              formControlName="prenom_visiteur" 
+              placeholder="Ex: Assane"
+            />
+            <div class="error-feedback" *ngIf="f['prenom_visiteur'].touched && f['prenom_visiteur'].errors">
+              <span *ngIf="f['prenom_visiteur'].errors['required']">Le prénom est requis.</span>
+            </div>
+          </div>
+
+          <div class="form-group" [class.ocr-success]="ocrSuccessAnimation" [class.has-error]="f['nom_visiteur'].touched && f['nom_visiteur'].invalid">
+            <label for="nom_visiteur">Nom</label>
+            <input 
+              type="text" 
+              id="nom_visiteur" 
+              formControlName="nom_visiteur" 
+              placeholder="Ex: Diop"
+            />
+            <div class="error-feedback" *ngIf="f['nom_visiteur'].touched && f['nom_visiteur'].errors">
+              <span *ngIf="f['nom_visiteur'].errors['required']">Le nom est requis.</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Groupe Statut et But -->
+        <div class="form-grid">
+          
+          <div class="form-group" [class.has-error]="f['statut_visiteur'].touched && f['statut_visiteur'].invalid">
+            <label for="statut_visiteur">Statut du Visiteur</label>
+            <select id="statut_visiteur" formControlName="statut_visiteur">
+              <option value="">Sélectionnez le statut...</option>
+              <option *ngFor="let s of statutsVisiteurs" [value]="s.value">{{ s.label }}</option>
+            </select>
+            <div class="error-feedback" *ngIf="f['statut_visiteur'].touched && f['statut_visiteur'].errors">
+              <span *ngIf="f['statut_visiteur'].errors['required']">Le statut du visiteur est obligatoire.</span>
+            </div>
+          </div>
+
+          <div class="form-group" [class.has-error]="f['but_visite'].touched && f['but_visite'].invalid">
+            <label for="but_visite">But de la Visite</label>
+            <input 
+              type="text" 
+              id="but_visite" 
+              formControlName="but_visite" 
+              placeholder="Ex: Entretien d'embauche, Livraison, Réunion..."
+            />
+            <div class="error-feedback" *ngIf="f['but_visite'].touched && f['but_visite'].errors">
+              <span *ngIf="f['but_visite'].errors['required']">Le but de la visite est obligatoire.</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Groupe Affectation / Destination à 3 niveaux -->
+        <div class="destination-card">
+          <h4>Affectation & Destination</h4>
+          
+          <div class="form-group" [class.has-error]="f['direction'].touched && f['direction'].invalid">
+            <label for="direction">1. Direction</label>
+            <select id="direction" formControlName="direction" (change)="onDirectionChange()">
+              <option value="">Sélectionnez la Direction...</option>
+              <option *ngFor="let d of destinations" [value]="d.direction">{{ d.direction }}</option>
+            </select>
+          </div>
+
+          <div class="form-group" [class.has-error]="f['service'].touched && f['service'].invalid">
+            <label for="service">2. Service</label>
+            <select id="service" formControlName="service" (change)="onServiceChange()">
+              <option value="">Sélectionnez le Service...</option>
+              <option *ngFor="let s of availableServices" [value]="s.name">{{ s.name }}</option>
+            </select>
+          </div>
+
+          <div class="form-group" [class.has-error]="f['division'].touched && f['division'].invalid">
+            <label for="division">3. Division</label>
+            <select id="division" formControlName="division">
+              <option value="">Sélectionnez la Division...</option>
+              <option *ngFor="let div of availableDivisions" [value]="div">{{ div }}</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit-entree" [disabled]="entreeForm.invalid || loading">
+          <span>Valider & Enregistrer l'Entrée</span>
+        </button>
+
+      </form>
     </div>
 
   </main>

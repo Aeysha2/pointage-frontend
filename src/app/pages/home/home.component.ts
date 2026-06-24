@@ -17,6 +17,7 @@ import { Visite } from '../../core/models/visite.model';
 export class HomeComponent implements OnInit, OnDestroy {
   agent: Agent | null = null;
   visitesEnCours: Visite[] = [];
+  selectedAgentId = 'all';
   
   // Tableau contenant les durées calculées en temps réel pour chaque visite
   visitesDurees: { [key: string]: string } = {};
@@ -33,13 +34,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     // 1. Récupérer le profil de l'agent connecté
     this.agent = this.authService.getAgentProfile();
 
-    // Si pas d'agent connecté en cache, redirection vers login (sécurité additionnelle)
+    // Si pas d'agent connecté en cache, redirection vers login
     if (!this.agent) {
       this.authService.clearSession();
       return;
     }
 
-    // 2. Souscription en temps réel aux visites en cours créées par cet agent
+    // 2. Souscription en temps réel aux visites en cours (filtrées ou globales selon le rôle)
     const agentId = this.agent.id.toString();
     const visitesSub = this.visiteService.streamVisiteEnCours(agentId).subscribe({
       next: (visites) => {
@@ -52,7 +53,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
     this.subscriptions.add(visitesSub);
 
-    // 3. Minuteur RxJS : recalculer les durées toutes les secondes
+    // 3. Minuteur : recalculer les durées toutes les secondes
     const timerSub = interval(1000).subscribe(() => {
       this.updateDurees();
     });
@@ -60,8 +61,34 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Libération propre des abonnements pour éviter les fuites de mémoire
     this.subscriptions.unsubscribe();
+  }
+
+  /**
+   * Filtre les visites affichées sur l'écran
+   */
+  getFilteredVisites(): Visite[] {
+    if (this.selectedAgentId === 'all') {
+      return this.visitesEnCours;
+    }
+    return this.visitesEnCours.filter(v => v.id_agent === this.selectedAgentId);
+  }
+
+  /**
+   * Retourne le nom lisible de l'agent
+   */
+  getAgentName(idAgent: string): string {
+    if (idAgent === '1') return 'Alexandre Martin (Police)';
+    if (idAgent === '2') return 'Sophie Dubois (Admin)';
+    return `Agent Police #${idAgent}`;
+  }
+
+  /**
+   * Gère le changement de filtre agent
+   */
+  onAgentFilterChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.selectedAgentId = select.value;
   }
 
   /**
@@ -77,8 +104,6 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   /**
    * Calcule le temps écoulé en format HH:mm:ss à partir d'une date ISO de début.
-   * 
-   * @param heureEntree Date ISO de début.
    */
   private calculateElapsed(heureEntree: string): string {
     const start = new Date(heureEntree).getTime();

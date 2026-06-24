@@ -8,7 +8,7 @@ export interface Agent {
   id: number;
   name: string;
   email: string;
-  role: string;
+  role: 'agent_securite' | 'admin';
   avatar_url?: string;
   poste?: string;
 }
@@ -38,8 +38,8 @@ export class AuthService {
         id: 1,
         name: 'Alexandre Martin',
         email: 'agent@entreprise.com',
-        role: 'agent_securite',
-        poste: 'Poste de Contrôle Sud'
+        role: 'agent_securite' as const,
+        poste: 'Guérite Principale'
       }
     },
     {
@@ -49,8 +49,8 @@ export class AuthService {
         id: 2,
         name: 'Sophie Dubois',
         email: 'admin@entreprise.com',
-        role: 'superviseur',
-        poste: 'Superviseur de Garde'
+        role: 'admin' as const,
+        poste: 'Commandement Central'
       }
     }
   ];

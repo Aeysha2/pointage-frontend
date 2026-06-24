@@ -1,41 +1,57 @@
-// Variables de style
-$color-bg: #F8FAFC;
-$color-card-bg: #FFFFFF;
-$color-accent: #1565C0; // Bleu professionnel
-$color-text: #1C1C1E;
-$color-text-muted: #64748B;
-$color-border: #E2E8F0;
-$color-green: #00C853; // Vert
-$color-red: #FF1744; // Rouge
+// Variables de design luxe et professionnelles
+$color-bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+$color-primary: #0f172a;
+$color-accent: #2563eb;
+$color-accent-light: #eff6ff;
+$color-accent-gold: #b45309;
+$color-gold-light: #fef3c7;
+$color-text: #0f172a;
+$color-text-muted: #475569;
+$color-border: rgba(226, 232, 240, 0.8);
+$color-card-bg: rgba(255, 255, 255, 0.85);
+
+$color-green: #059669;
+$color-green-light: #ecfdf5;
+$color-red: #dc2626;
+$color-red-light: #fef2f2;
+
+$shadow-luxury: 0 10px 25px -5px rgba(15, 23, 42, 0.04), 0 8px 16px -6px rgba(15, 23, 42, 0.04);
+$shadow-hover: 0 20px 35px -10px rgba(37, 99, 235, 0.12), 0 10px 15px -3px rgba(15, 23, 42, 0.06);
+@mixin glass-effect {
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+}
 
 .history-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: $color-bg;
+  background: $color-bg-gradient;
   font-family: 'Outfit', 'Inter', sans-serif;
-  padding-bottom: 90px; // Espace pour la barre de navigation basse
+  padding-bottom: 100px;
   box-sizing: border-box;
 }
 
-// En-tête
+// En-tête de page
 .app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem;
-  background-color: $color-card-bg;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  padding: 1.25rem 2rem;
+  background: $color-card-bg;
+  @include glass-effect;
+  border-bottom: 1px solid $color-border;
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 4px 20px -10px rgba(15, 23, 42, 0.05);
 
   h2 {
-    font-size: 1.25rem;
-    font-weight: 750;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: $color-primary;
     margin: 0;
-    color: $color-text;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.3px;
   }
 
   // Bouton Exporter CSV premium
@@ -43,25 +59,25 @@ $color-red: #FF1744; // Rouge
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background-color: $color-accent;
+    background: linear-gradient(135deg, $color-accent 0%, #1d4ed8 100%);
     color: #FFFFFF;
     border: none;
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 0.65rem 1.25rem;
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: 0.85rem;
+    font-weight: 750;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 10px rgba($color-accent, 0.15);
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba($color-accent, 0.2);
 
     &:hover {
-      background-color: darken($color-accent, 8%);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 14px rgba($color-accent, 0.25);
+      background: linear-gradient(135deg, darken($color-accent, 5%) 0%, #1e40af 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba($color-accent, 0.3);
     }
 
     &:active {
-      transform: translateY(1px);
+      transform: translateY(0);
     }
 
     .export-icon {
@@ -73,12 +89,14 @@ $color-red: #FF1744; // Rouge
 
 // Panneau des filtres
 .filters-panel {
-  background-color: $color-card-bg;
+  background: $color-card-bg;
+  @include glass-effect;
   border-bottom: 1px solid $color-border;
-  padding: 1.25rem 2rem;
+  padding: 1.5rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
 
   .filters-grid {
     display: grid;
@@ -92,27 +110,38 @@ $color-red: #FF1744; // Rouge
     gap: 0.4rem;
 
     label {
-      font-size: 0.775rem;
-      font-weight: 700;
-      color: $color-text;
-      letter-spacing: 0.3px;
+      font-size: 0.725rem;
+      font-weight: 750;
+      color: $color-text-muted;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     input[type="date"], select, input[type="text"] {
-      padding: 0.7rem 0.85rem;
-      border: 1.5px solid $color-border;
-      border-radius: 10px;
-      background-color: $color-bg;
-      color: $color-text;
+      padding: 0.75rem 1rem;
+      border: 1px solid $color-border;
+      border-radius: 12px;
+      background-color: #ffffff;
+      color: $color-primary;
+      font-family: inherit;
       font-size: 0.875rem;
+      font-weight: 600;
       outline: none;
-      transition: all 0.2s ease;
+      transition: all 0.25s ease;
+      appearance: none;
 
       &:focus {
         border-color: $color-accent;
-        background-color: #FFFFFF;
-        box-shadow: 0 0 0 3px rgba($color-accent, 0.1);
+        box-shadow: 0 0 0 3px rgba($color-accent, 0.08);
       }
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 16px;
+      padding-right: 2.25rem;
     }
   }
 
@@ -146,15 +175,17 @@ $color-red: #FF1744; // Rouge
       background: none;
       border: none;
       color: $color-red;
-      font-size: 0.825rem;
-      font-weight: 600;
+      font-size: 0.8rem;
+      font-weight: 750;
       cursor: pointer;
-      padding: 0.4rem 0.8rem;
-      border-radius: 8px;
-      transition: background-color 0.2s ease;
+      padding: 0.45rem 1rem;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+      background-color: $color-red-light;
+      border: 1px solid rgba($color-red, 0.12);
 
       &:hover {
-        background-color: rgba($color-red, 0.06);
+        background-color: darken($color-red-light, 2%);
       }
     }
   }
@@ -164,7 +195,7 @@ $color-red: #FF1744; // Rouge
 .app-content {
   flex: 1;
   padding: 2rem;
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
@@ -172,13 +203,13 @@ $color-red: #FF1744; // Rouge
   flex-direction: column;
 }
 
-// Wrapper du tableau responsive
+// Table responsive
 .table-responsive-wrapper {
-  background-color: $color-card-bg;
-  border-radius: 16px;
+  background: #ffffff;
+  border-radius: 24px;
   border: 1px solid $color-border;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.015);
-  overflow-x: auto; // Défilement horizontal sur mobile
+  box-shadow: $shadow-luxury;
+  overflow: hidden;
 }
 
 // Tableau de données
@@ -189,18 +220,19 @@ $color-red: #FF1744; // Rouge
   font-size: 0.9rem;
 
   th {
-    background-color: $color-bg;
+    background-color: $color-bg-gradient;
     color: $color-text-muted;
-    font-weight: 700;
-    font-size: 0.775rem;
+    font-weight: 750;
+    font-size: 0.725rem;
+    text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 1rem 1.25rem;
+    padding: 1.1rem 1.25rem;
     border-bottom: 1px solid $color-border;
   }
 
   td {
     padding: 1.15rem 1.25rem;
-    border-bottom: 1px solid $color-border;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
     color: $color-text;
     vertical-align: middle;
   }
@@ -221,15 +253,29 @@ $color-red: #FF1744; // Rouge
   .visitor-profile {
     display: flex;
     flex-direction: column;
+    gap: 0.15rem;
     
     .visitor-name {
-      font-weight: 700;
-      color: $color-text;
+      font-weight: 800;
+      color: $color-primary;
+      font-size: 0.95rem;
     }
     .visitor-id {
-      font-size: 0.75rem;
+      font-size: 0.775rem;
       color: $color-text-muted;
-      margin-top: 0.15rem;
+      font-weight: 600;
+    }
+    .visitor-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.1rem 0.4rem;
+      background-color: $color-gold-light;
+      color: $color-accent-gold;
+      border: 1px solid rgba($color-accent-gold, 0.1);
+      border-radius: 4px;
+      width: fit-content;
+      text-transform: uppercase;
+      margin-top: 0.2rem;
     }
   }
 
@@ -237,15 +283,16 @@ $color-red: #FF1744; // Rouge
   .service-meta {
     display: flex;
     flex-direction: column;
+    gap: 0.15rem;
 
     .service-name {
-      font-weight: 600;
-      color: $color-text;
+      font-weight: 700;
+      color: $color-primary;
     }
     .direction-name {
       font-size: 0.75rem;
       color: $color-text-muted;
-      margin-top: 0.15rem;
+      font-weight: 500;
     }
   }
 
@@ -255,44 +302,47 @@ $color-red: #FF1744; // Rouge
     flex-direction: column;
 
     .date-val {
-      font-weight: 500;
-      color: $color-text;
+      font-weight: 600;
+      color: $color-primary;
+      font-size: 0.85rem;
     }
     .time-val {
       font-size: 0.775rem;
       color: $color-text-muted;
-      margin-top: 0.15rem;
+      margin-top: 0.1rem;
       font-feature-settings: "tnum";
     }
   }
 
   .duration-col {
-    font-weight: 700;
-    color: $color-text;
+    font-weight: 800;
+    color: $color-accent;
     font-feature-settings: "tnum";
   }
 
   .empty-val {
-    color: #94A3B8;
+    color: #94a3b8;
   }
 
   // Badges d'état
   .badge-status {
     display: inline-flex;
     font-size: 0.7rem;
-    font-weight: 750;
-    padding: 0.3rem 0.6rem;
+    font-weight: 850;
+    padding: 0.35rem 0.75rem;
     border-radius: 8px;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
 
     &.en-cours {
       background-color: rgba($color-accent, 0.08);
       color: $color-accent;
+      border: 1px solid rgba($color-accent, 0.12);
     }
 
     &.termine {
       background-color: rgba($color-green, 0.08);
       color: $color-green;
+      border: 1px solid rgba($color-green, 0.12);
     }
   }
 }
@@ -304,22 +354,22 @@ $color-red: #FF1744; // Rouge
   align-items: center;
   justify-content: center;
   padding: 4rem 1.5rem;
-  background-color: $color-card-bg;
-  border-radius: 16px;
+  background-color: #ffffff;
+  border-radius: 24px;
   border: 1px dashed $color-border;
   text-align: center;
-  margin-top: 1rem;
+  box-shadow: $shadow-luxury;
 
   .empty-icon-wrapper {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background-color: rgba($color-text-muted, 0.05);
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    background-color: $color-accent-light;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 1rem;
-    color: $color-text-muted;
+    color: $color-accent;
 
     .empty-icon {
       width: 30px;
@@ -328,8 +378,9 @@ $color-red: #FF1744; // Rouge
   }
 
   p {
-    font-size: 0.925rem;
+    font-size: 0.95rem;
     color: $color-text-muted;
+    font-weight: 600;
     margin: 0;
   }
 }
@@ -339,12 +390,12 @@ $color-red: #FF1744; // Rouge
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1.5rem;
+  margin-top: 2rem;
   padding: 0.5rem 0;
 
   .page-indicator {
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 700;
     color: $color-text-muted;
   }
 
@@ -352,24 +403,25 @@ $color-red: #FF1744; // Rouge
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    background-color: $color-card-bg;
+    background-color: #ffffff;
     border: 1px solid $color-border;
-    border-radius: 10px;
-    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    padding: 0.6rem 1.15rem;
     font-size: 0.825rem;
-    font-weight: 600;
-    color: $color-text;
+    font-weight: 750;
+    color: $color-primary;
     cursor: pointer;
     transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.01);
 
     &:hover:not(:disabled) {
       border-color: $color-accent;
       color: $color-accent;
-      background-color: rgba($color-accent, 0.01);
+      background-color: rgba($color-accent, 0.02);
     }
 
     &:disabled {
-      opacity: 0.5;
+      opacity: 0.4;
       cursor: not-allowed;
     }
 
@@ -380,21 +432,25 @@ $color-red: #FF1744; // Rouge
   }
 }
 
-// Barre de navigation fixe en bas (identique aux autres pages)
+// Barre de navigation fixe en bas - Flottante de luxe
 .bottom-nav {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 72px;
-  background-color: $color-card-bg;
-  border-top: 1px solid $color-border;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 2.5rem);
+  max-width: 600px;
+  height: 76px;
+  background: rgba(255, 255, 255, 0.85);
+  @include glass-effect;
+  border: 1px solid $color-border;
+  border-radius: 28px;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.15);
   z-index: 1000;
-  padding: 0 1rem;
+  padding: 0 1.25rem;
 
   .nav-item {
     display: flex;
@@ -408,31 +464,34 @@ $color-red: #FF1744; // Rouge
     border: none;
     cursor: pointer;
     padding: 0.5rem;
-    border-radius: 12px;
-    transition: all 0.2s ease;
+    border-radius: 18px;
+    transition: all 0.25s ease;
     font-size: 0.725rem;
-    font-weight: 600;
-    min-width: 70px;
+    font-weight: 700;
+    min-width: 68px;
 
     .nav-icon {
       width: 22px;
       height: 22px;
-      transition: transform 0.2s ease;
+      stroke-width: 2px;
+      transition: all 0.25s ease;
     }
 
     &:hover {
       color: $color-accent;
       
       .nav-icon {
-        transform: translateY(-1px);
+        transform: translateY(-2px);
       }
     }
 
     &.active {
       color: $color-accent;
+      background-color: $color-accent-light;
 
       .nav-icon {
         stroke-width: 2.5px;
+        transform: scale(1.05);
       }
     }
   }
@@ -440,6 +499,7 @@ $color-red: #FF1744; // Rouge
   .btn-logout-nav {
     &:hover {
       color: $color-red;
+      background-color: $color-red-light;
     }
   }
 }
@@ -453,14 +513,19 @@ $color-red: #FF1744; // Rouge
 // Responsive
 @media (max-width: 768px) {
   .app-header {
-    padding: 1.25rem 1rem;
+    padding: 1rem;
   }
   
   .filters-panel {
-    padding: 1.25rem 1rem;
+    padding: 1rem;
+    
+    .filters-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
   }
 
   .app-content {
-    padding: 1.25rem 1rem;
+    padding: 1rem;
   }
 }

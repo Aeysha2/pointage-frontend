@@ -1,117 +1,108 @@
-// Variables de style
-$color-bg: #F8FAFC;
-$color-card-bg: #FFFFFF;
-$color-accent: #1565C0; // Bleu
-$color-text: #1C1C1E;
-$color-text-muted: #64748B;
-$color-border: #E2E8F0;
-$color-green: #00C853; // Vert Entrée
-$color-red: #FF1744; // Rouge
+// Variables de design luxe et professionnelles
+$color-bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+$color-primary: #0f172a;
+$color-accent: #2563eb;
+$color-accent-light: #eff6ff;
+$color-accent-gold: #b45309;
+$color-gold-light: #fef3c7;
+$color-text: #0f172a;
+$color-text-muted: #475569;
+$color-border: rgba(226, 232, 240, 0.8);
+$color-card-bg: rgba(255, 255, 255, 0.9);
+
+$color-green: #059669;
+$color-green-light: #ecfdf5;
+$color-red: #dc2626;
+$color-red-light: #fef2f2;
+
+$shadow-luxury: 0 10px 25px -5px rgba(15, 23, 42, 0.04), 0 8px 16px -6px rgba(15, 23, 42, 0.04);
+@mixin glass-effect {
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+}
 
 .scan-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: $color-bg;
+  background: $color-bg-gradient;
   font-family: 'Outfit', 'Inter', sans-serif;
-  box-sizing: border-box;
+  padding-bottom: 40px;
 }
 
-// En-tête du scanner
+// En-tête
 .scan-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem 1.5rem;
-  background-color: $color-card-bg;
+  padding: 1.25rem 2rem;
+  background: rgba(255, 255, 255, 0.85);
+  @include glass-effect;
   border-bottom: 1px solid $color-border;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 20px -10px rgba(15, 23, 42, 0.05);
 
   .btn-back {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border-radius: 12px;
     color: $color-text-muted;
-    background-color: $color-bg;
-    text-decoration: none;
+    background-color: #ffffff;
+    border: 1px solid $color-border;
     transition: all 0.2s ease;
+    text-decoration: none;
 
     &:hover {
-      color: $color-text;
-      background-color: $color-border;
-    }
-
-    .back-icon {
-      width: 20px;
-      height: 20px;
+      color: $color-accent;
+      border-color: rgba($color-accent, 0.3);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
     }
   }
 
   h2 {
     font-size: 1.15rem;
-    font-weight: 750;
+    font-weight: 800;
+    color: $color-primary;
     margin: 0;
-    color: $color-text;
+    letter-spacing: -0.3px;
   }
 
   .header-spacer {
-    width: 42px;
+    width: 40px;
   }
 }
 
-// Contenu principal
 .scan-content {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1.5rem;
+  padding: 2rem;
+  max-width: 650px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-// Enveloppe du scanner
+// Scanner CNI vidéo
 .scanner-wrapper {
   position: relative;
-  width: 100%;
-  max-width: 480px;
-  background-color: #000000;
-  border-radius: 24px;
+  border-radius: 28px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  aspect-ratio: 3/4;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: #000000;
+  aspect-ratio: 4 / 3;
+  width: 100%;
 
-  &.hidden {
-    display: none;
-  }
-
-  // Le lecteur vidéo html5-qrcode
   .reader-view {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    
-    // Surcharger les styles natifs moches de la bibliothèque
-    ::ng-deep {
-      video {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover !important;
-      }
-      #qr-reader__dashboard {
-        display: none !important;
-      }
-      #qr-reader__header_message {
-        display: none !important;
-      }
-    }
   }
 
-  // Overlay avec cadre de ciblage
   .scanner-overlay {
     position: absolute;
     top: 0;
@@ -121,287 +112,492 @@ $color-red: #FF1744; // Rouge
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(0, 0, 0, 0.45);
+    z-index: 10;
     pointer-events: none;
   }
 
-  .scan-frame {
+  // Cadre de scan horizontal de type CNI / ID card
+  .cni-frame {
+    width: 85%;
+    height: 50%;
+    border: 2px dashed rgba(#ffffff, 0.6);
+    border-radius: 18px;
     position: relative;
-    width: 250px;
-    height: 250px;
-    border: 2px solid rgba(255, 255, 255, 0.25);
-    border-radius: 24px;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45); // Masque sombre extérieur
+    box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-    // Les coins renforcés
+    .frame-label {
+      position: absolute;
+      bottom: -32px;
+      color: #ffffff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background-color: rgba($color-primary, 0.7);
+      padding: 0.35rem 0.875rem;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      letter-spacing: 0.3px;
+    }
+
+    // Angles renforcés
     .corner {
       position: absolute;
       width: 24px;
       height: 24px;
-      border-color: $color-green;
+      border-color: $color-accent;
       border-style: solid;
-      border-width: 0;
+      stroke-width: 4px;
 
       &.top-left {
         top: -2px;
         left: -2px;
-        border-top-width: 4px;
-        border-left-width: 4px;
-        border-top-left-radius: 12px;
+        border-width: 4px 0 0 4px;
+        border-top-left-radius: 14px;
       }
       &.top-right {
         top: -2px;
         right: -2px;
-        border-top-width: 4px;
-        border-right-width: 4px;
-        border-top-right-radius: 12px;
+        border-width: 4px 4px 0 0;
+        border-top-right-radius: 14px;
       }
       &.bottom-left {
         bottom: -2px;
         left: -2px;
-        border-bottom-width: 4px;
-        border-left-width: 4px;
-        border-bottom-left-radius: 12px;
+        border-width: 0 0 4px 4px;
+        border-bottom-left-radius: 14px;
       }
       &.bottom-right {
         bottom: -2px;
         right: -2px;
-        border-bottom-width: 4px;
-        border-right-width: 4px;
-        border-bottom-right-radius: 12px;
+        border-width: 0 4px 4px 0;
+        border-bottom-right-radius: 14px;
       }
     }
 
     // Ligne laser animée
     .scan-line {
       position: absolute;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, $color-green, transparent);
-      box-shadow: 0 0 8px $color-green;
-      animation: scanLaser 2.2s linear infinite;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, rgba($color-accent, 0) 0%, $color-accent 50%, rgba($color-accent, 0) 100%);
+      box-shadow: 0 0 8px $color-accent;
+      animation: laser 2s infinite ease-in-out;
     }
   }
 
-  .scan-instruction {
-    position: absolute;
-    bottom: 4.5rem;
-    left: 0;
-    right: 0;
-    text-align: center;
-    color: #FFFFFF;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-    margin: 0;
-    padding: 0 1rem;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  .btn-simulate {
+  .scanner-actions {
     position: absolute;
     bottom: 1.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(255, 255, 255, 0.15);
-    color: #FFFFFF;
-    border: 1.5px solid rgba(255, 255, 255, 0.4);
-    border-radius: 30px;
-    padding: 0.6rem 1.25rem;
-    font-size: 0.825rem;
-    font-weight: 600;
-    cursor: pointer;
-    z-index: 11;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(4px);
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 20;
+    padding: 0 1.5rem;
 
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.25);
-      border-color: #FFFFFF;
+    .btn-simulate-ocr {
+      background: linear-gradient(135deg, $color-accent 0%, #1e40af 100%);
+      border: none;
+      color: #ffffff;
+      padding: 0.875rem 1.75rem;
+      border-radius: 16px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 8px 16px rgba($color-accent, 0.3);
+      transition: all 0.25s ease;
+      width: 100%;
+      justify-content: center;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 20px rgba($color-accent, 0.4);
+      }
+
+      .btn-icon {
+        width: 18px;
+        height: 18px;
+      }
     }
-    
-    &:active {
-      transform: translateX(-50%) scale(0.97);
+
+    .btn-cancel-scan {
+      background-color: rgba(#ffffff, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      padding: 0.625rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+      width: 100%;
+      text-align: center;
+
+      &:hover {
+        background-color: rgba(#ffffff, 0.35);
+      }
     }
   }
 }
 
-// Cartes de statut (Succès, Chargement, Erreur)
+// Cartes de statut (Chargement, succès, erreur)
 .status-card {
-  width: 100%;
-  max-width: 400px;
-  background-color: $color-card-bg;
-  border-radius: 24px;
-  padding: 3rem 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+  background-color: #ffffff;
+  border-radius: 28px;
   border: 1px solid $color-border;
+  padding: 3rem 2rem;
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: $shadow-luxury;
 
-  h3 {
-    font-size: 1.35rem;
-    font-weight: 750;
-    color: $color-text;
-    margin: 1.5rem 0 0.5rem;
-  }
-
-  p {
-    font-size: 0.95rem;
-    color: $color-text-muted;
-    line-height: 1.5;
-    margin: 0;
-  }
-}
-
-// Spécificités Chargement
-.loading-card {
   .loader-wrapper {
-    position: relative;
     width: 60px;
     height: 60px;
-
+    position: relative;
+    margin: 0 auto 1.5rem;
+    
     .double-bounce1, .double-bounce2 {
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      background-color: $color-green;
+      background-color: $color-accent;
       opacity: 0.6;
       position: absolute;
       top: 0;
       left: 0;
       animation: sk-bounce 2.0s infinite ease-in-out;
     }
-
+    
     .double-bounce2 {
       animation-delay: -1.0s;
     }
   }
 
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: $color-primary;
+  }
+
   .loading-detail {
     font-size: 0.85rem;
-    margin-top: 0.5rem;
-  }
-}
-
-// Spécificités Succès
-.success-card {
-  .success-icon-wrapper {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background-color: rgba($color-green, 0.1);
-    color: $color-green;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    .success-icon {
-      width: 36px;
-      height: 36px;
-    }
-  }
-
-  .redirect-info {
-    font-size: 0.8rem;
-    font-weight: 600;
     color: $color-text-muted;
-    margin-top: 1.5rem;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  // Succès
+  &.success-card {
+    .success-icon-wrapper {
+      width: 72px;
+      height: 72px;
+      border-radius: 22px;
+      background-color: $color-green-light;
+      color: $color-green;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      border: 1px solid rgba($color-green, 0.15);
+      box-shadow: 0 8px 16px -4px rgba($color-green, 0.2);
+
+      .success-icon {
+        width: 32px;
+        height: 32px;
+      }
+    }
+
+    .redirect-info {
+      display: inline-block;
+      margin-top: 1.5rem;
+      font-size: 0.775rem;
+      font-weight: 700;
+      color: $color-text-muted;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+  }
+
+  // Erreur
+  &.error-card {
+    .error-icon-wrapper {
+      width: 72px;
+      height: 72px;
+      border-radius: 22px;
+      background-color: $color-red-light;
+      color: $color-red;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      border: 1px solid rgba($color-red, 0.15);
+
+      .error-icon {
+        width: 32px;
+        height: 32px;
+      }
+    }
+
+    .error-text {
+      color: $color-red;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .help-section {
+      text-align: left;
+      background-color: $color-bg-gradient;
+      padding: 1.25rem;
+      border-radius: 16px;
+      border: 1px solid $color-border;
+      margin-bottom: 1.5rem;
+
+      h4 {
+        margin: 0 0 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 750;
+        color: $color-primary;
+        text-transform: uppercase;
+      }
+
+      ol {
+        margin: 0;
+        padding-left: 1.25rem;
+        font-size: 0.8rem;
+        color: $color-text-muted;
+        line-height: 1.5;
+
+        li {
+          margin-bottom: 0.25rem;
+        }
+      }
+    }
+
+    .btn-retry-form {
+      background-color: $color-primary;
+      border: none;
+      color: #ffffff;
+      padding: 0.875rem 1.75rem;
+      border-radius: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: lighten($color-primary, 10%);
+      }
+    }
   }
 }
 
-// Spécificités Erreurs
-.error-card {
-  .error-icon-wrapper {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background-color: rgba($color-red, 0.1);
-    color: $color-red;
+// Formulaire d'enregistrement
+.form-container {
+  background-color: #ffffff;
+  border-radius: 28px;
+  border: 1px solid $color-border;
+  padding: 2rem;
+  box-shadow: $shadow-luxury;
+
+  .scan-trigger-box {
     display: flex;
-    align-items: center;
-    justify-content: center;
-
-    .error-icon {
-      width: 36px;
-      height: 36px;
-    }
-  }
-
-  .error-text {
-    color: $color-red;
-    font-weight: 500;
-    margin-bottom: 1.5rem;
-  }
-
-  // Section d'aide pour permission caméra/GPS
-  .help-section {
-    width: 100%;
-    text-align: left;
-    background-color: $color-bg;
-    border-radius: 16px;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    background-color: $color-accent-light;
+    border: 1px dashed rgba($color-accent, 0.25);
     padding: 1.25rem;
-    margin-bottom: 1.5rem;
-    border: 1px solid $color-border;
+    border-radius: 20px;
 
-    h4 {
-      font-size: 0.875rem;
-      font-weight: 700;
-      margin: 0 0 0.5rem;
-      color: $color-text;
+    .btn-trigger-scan {
+      background-color: $color-accent;
+      color: #ffffff;
+      border: none;
+      padding: 0.875rem 1.25rem;
+      border-radius: 14px;
+      font-weight: 750;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 12px rgba($color-accent, 0.15);
+
+      &:hover {
+        background-color: darken($color-accent, 8%);
+        transform: translateY(-1px);
+      }
+
+      .scan-btn-icon {
+        width: 18px;
+        height: 18px;
+      }
     }
 
-    ol {
-      margin: 0;
-      padding-left: 1.2rem;
-      font-size: 0.825rem;
+    .scan-tip {
+      font-size: 0.775rem;
       color: $color-text-muted;
-      line-height: 1.5;
+      line-height: 1.4;
+      font-weight: 550;
+    }
+  }
 
-      li {
-        margin-bottom: 0.4rem;
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+
+    @media (min-width: 500px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    position: relative;
+
+    label {
+      font-size: 0.75rem;
+      font-weight: 750;
+      color: $color-text-muted;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.875rem 1.25rem;
+      border-radius: 14px;
+      border: 1px solid $color-border;
+      background-color: $color-bg-gradient;
+      color: $color-primary;
+      font-family: inherit;
+      font-size: 0.925rem;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.25s ease;
+
+      &::placeholder {
+        color: #94a3b8;
+      }
+
+      &:focus {
+        border-color: $color-accent;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 4px rgba($color-accent, 0.08);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: rgba(226, 232, 240, 0.4);
+      }
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1.25rem center;
+      background-size: 16px;
+      padding-right: 2.5rem;
+    }
+
+    &.has-error {
+      input, select {
+        border-color: $color-red;
         
-        &:last-child {
-          margin-bottom: 0;
+        &:focus {
+          box-shadow: 0 0 0 4px rgba($color-red, 0.08);
         }
+      }
+    }
+
+    .error-feedback {
+      font-size: 0.725rem;
+      color: $color-red;
+      font-weight: 600;
+    }
+
+    // Animation Boum ! lors du scan OCR réussi
+    &.ocr-success {
+      input {
+        animation: ocr-flash 1.8s cubic-bezier(0.25, 1, 0.5, 1) both;
       }
     }
   }
 
-  .btn-retry {
+  // Fiche d'affectation
+  .destination-card {
+    background-color: $color-bg-gradient;
+    border: 1px solid $color-border;
+    border-radius: 20px;
+    padding: 1.25rem;
+    margin-bottom: 2rem;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    background-color: $color-accent;
-    color: #FFFFFF;
+    flex-direction: column;
+    gap: 1rem;
+
+    h4 {
+      margin: 0;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: $color-accent-gold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid $color-border;
+      padding-bottom: 0.5rem;
+    }
+  }
+
+  .btn-submit-entree {
+    width: 100%;
+    background: linear-gradient(135deg, $color-green 0%, #047857 100%);
     border: none;
-    border-radius: 12px;
-    padding: 0.8rem 1.5rem;
-    font-size: 0.95rem;
-    font-weight: 600;
+    color: #ffffff;
+    padding: 1rem 1.5rem;
+    border-radius: 16px;
+    font-weight: 750;
+    font-size: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba($color-accent, 0.15);
+    transition: all 0.25s ease;
+    box-shadow: 0 10px 20px -8px rgba($color-green, 0.3);
 
     &:hover {
-      background-color: darken($color-accent, 8%);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 15px 25px -8px rgba($color-green, 0.45);
     }
 
-    .retry-icon {
-      width: 18px;
-      height: 18px;
+    &:active {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      background: #cbd5e1;
+      color: #94a3b8;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
     }
   }
 }
 
 // Animations
-@keyframes scanLaser {
+@keyframes laser {
   0% {
     top: 5%;
   }
@@ -421,29 +617,18 @@ $color-red: #FF1744; // Rouge
   }
 }
 
-@keyframes scaleUp {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
+@keyframes ocr-flash {
+  0% {
+    background-color: rgba($color-green, 0.25);
+    border-color: $color-green;
+    transform: scale(1.02);
   }
-  to {
-    opacity: 1;
+  30% {
+    background-color: rgba($color-green, 0.1);
     transform: scale(1);
   }
-}
-
-// Mobile optimize
-@media (max-width: 480px) {
-  .scan-content {
-    padding: 1.25rem 1rem;
-  }
-  
-  .scanner-wrapper {
-    aspect-ratio: 1/1; // Format carré pour mobile
-  }
-
-  .scan-frame {
-    width: 200px;
-    height: 200px;
+  100% {
+    background-color: $color-bg-gradient;
+    border-color: $color-border;
   }
 }

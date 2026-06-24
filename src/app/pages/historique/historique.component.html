@@ -85,30 +85,31 @@
             <!-- Colonne Visiteur -->
             <td>
               <div class="visitor-profile">
-                <span class="visitor-name">{{ visite.nom_visiteur }}</span>
-                <span class="visitor-id">{{ visite.id_visiteur }}</span>
+                <span class="visitor-name">{{ visite.prenom_visiteur }} {{ visite.nom_visiteur }}</span>
+                <span class="visitor-id">CNI: {{ visite.numero_cni }}</span>
+                <span class="visitor-tag">{{ visite.statut_visiteur }}</span>
               </div>
             </td>
 
             <!-- Colonne Service -->
             <td>
               <div class="service-meta">
-                <span class="service-name">{{ visite.service }}</span>
+                <span class="service-name">{{ visite.service }} ({{ visite.division }})</span>
                 <span class="direction-name">{{ visite.direction }}</span>
               </div>
             </td>
 
             <!-- Colonne Entrée -->
             <td class="time-col">
-              <span class="date-val">{{ visite.date | date:'dd/MM/yy' }}</span>
-              <span class="time-val">{{ visite.heure_entree | date:'HH:mm' }}</span>
+              <span class="date-val">{{ visite.date | date:'dd/MM/yyyy' }}</span>
+              <span class="time-val">{{ visite.heure_entree | date:'HH:mm:ss' }}</span>
             </td>
 
             <!-- Colonne Sortie -->
             <td class="time-col">
               <span *ngIf="visite.heure_sortie">
-                <span class="date-val">{{ visite.heure_sortie | date:'dd/MM/yy' }}</span>
-                <span class="time-val">{{ visite.heure_sortie | date:'HH:mm' }}</span>
+                <span class="date-val">{{ visite.heure_sortie | date:'dd/MM/yyyy' }}</span>
+                <span class="time-val">{{ visite.heure_sortie | date:'HH:mm:ss' }}</span>
               </span>
               <span class="empty-val" *ngIf="!visite.heure_sortie">-</span>
             </td>
@@ -122,7 +123,7 @@
             <!-- Colonne Statut -->
             <td>
               <span class="badge-status" [class.en-cours]="visite.statut === 'en_cours'" [class.termine]="visite.statut === 'termine'">
-                {{ visite.statut === 'en_cours' ? 'EN COURS' : 'TERMINÉ' }}
+                {{ visite.statut === 'en_cours' ? 'SUR SITE' : 'SORTI' }}
               </span>
             </td>
           </tr>
@@ -174,12 +175,19 @@
     
     <a routerLink="/scan-entree" class="nav-item">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
-        <path d="M21 2v6h-6"></path>
-        <path d="M3 22v-6h6"></path>
-        <path d="M21 13a9 9 0 0 1-9 9c-3.36 0-6.27-1.84-7.81-4.57"></path>
-        <path d="M3 11a9 9 0 0 1 9-9c3.36 0 6.27 1.84 7.81 4.57"></path>
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="9" y1="9" x2="15" y2="9"></line>
+        <line x1="9" y1="13" x2="15" y2="13"></line>
+        <line x1="9" y1="17" x2="13" y2="17"></line>
       </svg>
-      <span>Scanner</span>
+      <span>Entrée</span>
+    </a>
+
+    <a routerLink="/scan-sortie" class="nav-item">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
+        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+      <span>Sortie</span>
     </a>
 
     <a routerLink="/historique" class="nav-item active">
@@ -198,7 +206,7 @@
         <polyline points="16 17 21 12 16 7"></polyline>
         <line x1="21" y1="12" x2="9" y2="12"></line>
       </svg>
-      <span>Déconnexion</span>
+      <span>Quitter</span>
     </button>
   </nav>
 
