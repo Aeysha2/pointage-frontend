@@ -77,7 +77,8 @@
             <th>Entrée</th>
             <th>Sortie</th>
             <th>Durée</th>
-            <th>Statut</th>
+            <th *ngIf="agent?.role !== 'admin'">Statut</th>
+            <th *ngIf="agent?.role === 'admin'">Localisation de l'enregistrement</th>
           </tr>
         </thead>
         <tbody>
@@ -116,15 +117,28 @@
 
             <!-- Colonne Durée -->
             <td class="duration-col">
-              <span class="duration-val" *ngIf="visite.duree_totale !== null">{{ visite.duree_totale }} min</span>
-              <span class="empty-val" *ngIf="visite.duree_totale === null">-</span>
+              <span class="duration-val">{{ visitesDurees[visite.id || visite.id_visiteur || ''] || '-' }}</span>
             </td>
 
-            <!-- Colonne Statut -->
-            <td>
+            <!-- Colonne Statut / Localisation -->
+            <td *ngIf="agent?.role !== 'admin'">
               <span class="badge-status" [class.en-cours]="visite.statut === 'en_cours'" [class.termine]="visite.statut === 'termine'">
                 {{ visite.statut === 'en_cours' ? 'SUR SITE' : 'SORTI' }}
               </span>
+            </td>
+            <td *ngIf="agent?.role === 'admin'">
+              <div class="location-meta">
+                <span class="location-name">Sénégal (Dakar Site)</span>
+                <span class="gps-coords">
+                  <a [href]="'https://www.google.com/maps/search/?api=1&query=' + visite.gps_entree.lat + ',' + visite.gps_entree.lng" target="_blank" class="gps-link" title="Voir sur Google Maps">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="gps-icon-mini">
+                      <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path>
+                      <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    {{ visite.gps_entree.lat | number:'1.4-4' }}, {{ visite.gps_entree.lng | number:'1.4-4' }}
+                  </a>
+                </span>
+              </div>
             </td>
           </tr>
         </tbody>

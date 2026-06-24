@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
+import { Subscription, interval } from 'rxjs';
 import { VisiteService } from '../../core/services/visite.service';
 import { AuthService, Agent } from '../../core/services/auth.service';
 import { Visite } from '../../core/models/visite.model';
@@ -13,7 +14,7 @@ import { Visite } from '../../core/models/visite.model';
   templateUrl: './historique.component.html',
   styleUrls: ['./historique.component.scss']
 })
-export class HistoriqueComponent implements OnInit {
+export class HistoriqueComponent implements OnInit, OnDestroy {
   agent: Agent | null = null;
   // Liste complète des visites récupérée de l'API
   allVisites: Visite[] = [];
@@ -32,6 +33,10 @@ export class HistoriqueComponent implements OnInit {
   pageSize = 10;
   totalPages = 1;
 
+  // Stockage des durées calculées à la seconde près
+  visitesDurees: { [key: string]: string } = {};
+  private timerSubscription: Subscription | null = null;
+
   constructor(
     private visiteService: VisiteService,
     private authService: AuthService,
@@ -45,6 +50,17 @@ export class HistoriqueComponent implements OnInit {
     }
     this.agent = this.authService.getAgentProfile();
     this.loadHistorique();
+
+    // Lancer le timer pour recalculer les durées cumulées en temps réel
+    this.timerSubscription = interval(1000).subscribe(() => {
+      this.updateDurees();
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.timerSubscription) {
+      this.timerSubscription.unsubscribe();
+    }
   }
 
   /**
@@ -112,6 +128,33 @@ export class HistoriqueComponent implements OnInit {
     const startIndex = (this.currentPage - 1) * this.pageSize;
     const endIndex = startIndex + this.pageSize;
     this.paginatedVisites = this.filteredVisites.slice(startIndex, endIndex);
+    this.updateDurees();
+  }
+
+  updateDurees(): void {
+    this.paginatedVisites.forEach((visite) => {
+      const key = visite.id || visite.id_visiteur || '';
+      if (key) {
+        this.visitesDurees[key] = this.calculateDuration(visite);
+      }
+    });
+  }
+
+  calculateDuration(visite: Visite): string {
+    const start = new Date(visite.heure_entree).getTime();
+    const end = visite.heure_sortie ? new Date(visite.heure_sortie).getTime() : Date.now();
+    const diffMs = end - start;
+
+    if (diffMs < 0) return '00h 00m';
+
+    const diffSecs = Math.floor(diffMs / 1000);
+    const hours = Math.floor(diffSecs / 3600);
+    const minutes = Math.floor((diffSecs % 3600) / 60);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+    }
+    return `${minutes} min`;
   }
 
   /**
