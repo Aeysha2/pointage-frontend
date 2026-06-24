@@ -104,6 +104,12 @@ export class ScanEntreeComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
 
+    const agent = this.authService.getAgentProfile();
+    if (agent && agent.role === 'admin') {
+      this.router.navigate(['/home']);
+      return;
+    }
+
     // Initialisation du formulaire
     this.entreeForm = this.fb.group({
       prenom_visiteur: ['', Validators.required],

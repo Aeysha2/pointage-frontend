@@ -19,6 +19,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   visitesEnCours: Visite[] = [];
   selectedAgentId = 'all';
   
+  // Statistiques pour la vue Administrateur
+  totalActiveVisitors = 0;
+  activeGuardsCount = 2; // Par défaut en démo
+  totalVisitsTodayCount = 0;
+  
   // Tableau contenant les durées calculées en temps réel pour chaque visite
   visitesDurees: { [key: string]: string } = {};
 
@@ -46,6 +51,9 @@ export class HomeComponent implements OnInit, OnDestroy {
       next: (visites) => {
         this.visitesEnCours = visites;
         this.updateDurees();
+        if (this.agent?.role === 'admin') {
+          this.updateAdminStats();
+        }
       },
       error: (err) => {
         console.error('Erreur de souscription Firestore:', err);
@@ -62,6 +70,26 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+  }
+
+  /**
+   * Calcule les statistiques d'administration globale
+   */
+  updateAdminStats(): void {
+    this.totalActiveVisitors = this.visitesEnCours.length;
+    
+    // Compter les agents distincts ayant des visites actives
+    const uniqueAgents = new Set(this.visitesEnCours.map(v => v.id_agent));
+    this.activeGuardsCount = Math.max(uniqueAgents.size, 2); // Minimum 2 pour la démo
+
+    // Compter le cumul des visites aujourd'hui (actives + terminées aujourd'hui)
+    const todayStr = new Date().toISOString().split('T')[0];
+    this.visiteService.getHistorique().subscribe({
+      next: (historique) => {
+        const finishedToday = historique.filter(v => v.date === todayStr).length;
+        this.totalVisitsTodayCount = this.totalActiveVisitors + finishedToday;
+      }
+    });
   }
 
   /**

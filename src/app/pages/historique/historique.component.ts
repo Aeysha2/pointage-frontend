@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { VisiteService } from '../../core/services/visite.service';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, Agent } from '../../core/services/auth.service';
 import { Visite } from '../../core/models/visite.model';
 
 @Component({
@@ -14,6 +14,7 @@ import { Visite } from '../../core/models/visite.model';
   styleUrls: ['./historique.component.scss']
 })
 export class HistoriqueComponent implements OnInit {
+  agent: Agent | null = null;
   // Liste complète des visites récupérée de l'API
   allVisites: Visite[] = [];
   // Liste des visites filtrée à afficher
@@ -42,6 +43,7 @@ export class HistoriqueComponent implements OnInit {
       this.router.navigate(['/login']);
       return;
     }
+    this.agent = this.authService.getAgentProfile();
     this.loadHistorique();
   }
 

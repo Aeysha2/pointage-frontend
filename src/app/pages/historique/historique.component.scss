@@ -529,3 +529,189 @@ $shadow-hover: 0 20px 35px -10px rgba(37, 99, 235, 0.12), 0 10px 15px -3px rgba(
     padding: 1rem;
   }
 }
+
+// 🛡️ THEME ADMINISTRATEUR POUR L'HISTORIQUE (SUPERVISION CENTRALE DARK MODE LUXE)
+.history-container.admin-theme {
+  background: linear-gradient(135deg, #0b1329 0%, #030712 100%) !important;
+  color: #f1f5f9;
+
+  .app-header {
+    background: rgba(17, 24, 39, 0.7);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px -10px rgba(0, 0, 0, 0.3);
+
+    h2 {
+      color: #ffffff;
+    }
+
+    .btn-export {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);
+
+      &:hover {
+        background: linear-gradient(135deg, #b45309 0%, #78350f 100%);
+        box-shadow: 0 8px 16px rgba(217, 119, 6, 0.35);
+      }
+    }
+  }
+
+  .filters-panel {
+    background: rgba(31, 41, 55, 0.45);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    .filter-group {
+      label {
+        color: #9ca3af;
+      }
+
+      input[type="date"], select, input[type="text"] {
+        background-color: #1f2937;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+
+        &:focus {
+          border-color: #fbbf24;
+          box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+        }
+      }
+
+      select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      }
+    }
+
+    .search-input-wrapper {
+      .search-icon {
+        color: #9ca3af;
+      }
+    }
+  }
+
+  .table-responsive-wrapper {
+    background: rgba(31, 41, 55, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.3);
+  }
+
+  .history-table {
+    th {
+      background: rgba(17, 24, 39, 0.8);
+      color: #9ca3af;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    td {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #e5e7eb;
+    }
+
+    tbody tr:hover {
+      background-color: rgba(255, 255, 255, 0.015);
+    }
+
+    .visitor-profile {
+      .visitor-name {
+        color: #ffffff;
+      }
+      .visitor-id {
+        color: #9ca3af;
+      }
+      .visitor-tag {
+        background-color: rgba(251, 191, 36, 0.1);
+        color: #fbbf24;
+        border: 1px solid rgba(251, 191, 36, 0.15);
+      }
+    }
+
+    .service-meta {
+      .service-name {
+        color: #ffffff;
+      }
+      .direction-name {
+        color: #9ca3af;
+      }
+    }
+
+    .time-col {
+      .date-val {
+        color: #ffffff;
+      }
+      .time-val {
+        color: #9ca3af;
+      }
+    }
+
+    .duration-col {
+      color: #fbbf24;
+    }
+
+    .empty-val {
+      color: #4b5563;
+    }
+
+    .badge-status {
+      &.en-cours {
+        background-color: rgba(37, 99, 235, 0.15);
+        color: #60a5fa;
+        border: 1px solid rgba(37, 99, 235, 0.25);
+      }
+      &.termine {
+        background-color: rgba(5, 150, 105, 0.15);
+        color: #34d399;
+        border: 1px solid rgba(5, 150, 105, 0.25);
+      }
+    }
+  }
+
+  .empty-state {
+    background-color: rgba(31, 41, 55, 0.3);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+
+    .empty-icon-wrapper {
+      background-color: rgba(#fbbf24, 0.1);
+      color: #fbbf24;
+    }
+    p {
+      color: #9ca3af;
+    }
+  }
+
+  .pagination-panel {
+    .page-indicator {
+      color: #9ca3af;
+    }
+
+    .btn-page {
+      background-color: #1f2937;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+
+      &:hover:not(:disabled) {
+        border-color: #fbbf24;
+        color: #fbbf24;
+        background-color: rgba(251, 191, 36, 0.05);
+      }
+    }
+  }
+
+  .bottom-nav {
+    background: rgba(17, 24, 39, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5) !important;
+
+    .nav-item {
+      color: #9ca3af;
+
+      &:hover {
+        color: #fbbf24;
+      }
+
+      &.active {
+        color: #fbbf24;
+        background-color: rgba(#fbbf24, 0.1);
+      }
+    }
+  }
+}

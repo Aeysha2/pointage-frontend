@@ -1,4 +1,4 @@
-<div class="home-container">
+<div class="home-container" [class.admin-theme]="agent?.role === 'admin'">
   
   <!-- En-tête de la page d'accueil -->
   <header class="app-header">
@@ -28,142 +28,261 @@
   <!-- Section principale de pointage -->
   <main class="app-content">
     
-    <!-- Actions rapides : Gros boutons d'actions (uniquement pour les agents de police ou admin pour tester) -->
-    <section class="action-cards">
-      <!-- Bouton ENTRÉE -->
-      <button class="action-btn btn-entree" (click)="navigateToEntree()" aria-label="Scanner une entrée">
-        <div class="btn-content">
-          <div class="icon-circle">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="action-icon">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
+    <!-- ========================================================================= -->
+    <!-- 👮‍♂️ INTERFACE AGENT DE POLICE (VUE GUÉRITE)                               -->
+    <!-- ========================================================================= -->
+    <ng-container *ngIf="agent?.role !== 'admin'">
+      <!-- Actions rapides : Gros boutons d'actions -->
+      <section class="action-cards">
+        <!-- Bouton ENTRÉE -->
+        <button class="action-btn btn-entree" (click)="navigateToEntree()" aria-label="Scanner une entrée">
+          <div class="btn-content">
+            <div class="icon-circle">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="action-icon">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </div>
+            <div class="text-group">
+              <span class="action-title">ENTRÉE</span>
+              <span class="action-desc">Scan CNI & Formulaire</span>
+            </div>
+          </div>
+        </button>
+
+        <!-- Bouton SORTIE -->
+        <button class="action-btn btn-sortie" (click)="navigateToSortie()" aria-label="Scanner une sortie">
+          <div class="btn-content">
+            <div class="icon-circle">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="action-icon">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </div>
+            <div class="text-group">
+              <span class="action-title">SORTIE</span>
+              <span class="action-desc">Recherche & Clôture</span>
+            </div>
+          </div>
+        </button>
+      </section>
+
+      <!-- Section des visites actives en cours -->
+      <section class="visites-actives">
+        <div class="section-title-wrapper">
+          <h3>Mes Visiteurs Enregistrés ({{ visitesEnCours.length }})</h3>
+          <span class="pulse-live">● DIRECT</span>
+        </div>
+
+        <!-- Liste vide si aucune visite -->
+        <div class="empty-state" *ngIf="visitesEnCours.length === 0">
+          <div class="empty-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
             </svg>
           </div>
-          <div class="text-group">
-            <span class="action-title">ENTRÉE</span>
-            <span class="action-desc">Scan CNI & Formulaire</span>
+          <p>Aucun visiteur actuellement sous votre garde.</p>
+        </div>
+
+        <!-- Cartes de visites en cours -->
+        <div class="visites-list" *ngIf="visitesEnCours.length > 0">
+          <div class="visite-card animate-card" *ngFor="let visite of visitesEnCours">
+            <div class="card-header">
+              <div class="visitor-meta">
+                <span class="visitor-name">{{ visite.prenom_visiteur }} {{ visite.nom_visiteur }}</span>
+                <span class="visitor-id">CNI: {{ visite.numero_cni }}</span>
+              </div>
+              <div class="badges-group">
+                <span class="badge-status-type">{{ visite.statut_visiteur }}</span>
+                <span class="badge-status">SUR SITE</span>
+              </div>
+            </div>
+            
+            <div class="card-body">
+              <div class="info-row">
+                <div class="info-col full-width">
+                  <span class="info-label">Destination</span>
+                  <span class="info-val destination-path">
+                    {{ visite.direction }} <span class="path-sep">➔</span> {{ visite.service }} <span class="path-sep">➔</span> {{ visite.division }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-col">
+                  <span class="info-label">Motif</span>
+                  <span class="info-val">{{ visite.but_visite }}</span>
+                </div>
+                <div class="info-col">
+                  <span class="info-label">Entrée</span>
+                  <span class="info-val">{{ visite.heure_entree | date:'HH:mm:ss' }}</span>
+                </div>
+              </div>
+
+              <!-- Minuteur en temps réel -->
+              <div class="timer-section">
+                <div class="timer-label-group">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="timer-icon">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12,6 12,12 16,14"></polyline>
+                  </svg>
+                  <span>Durée sur place</span>
+                </div>
+                <span class="timer-value">{{ visitesDurees[visite.id || ''] || '00:00:00' }}</span>
+              </div>
+            </div>
           </div>
         </div>
-      </button>
+      </section>
+    </ng-container>
 
-      <!-- Bouton SORTIE -->
-      <button class="action-btn btn-sortie" (click)="navigateToSortie()" aria-label="Scanner une sortie">
-        <div class="btn-content">
-          <div class="icon-circle">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="action-icon">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
+    <!-- ========================================================================= -->
+    <!-- 🛡️ INTERFACE ADMINISTRATEUR (SUPERVISION CENTRALE)                       -->
+    <!-- ========================================================================= -->
+    <ng-container *ngIf="agent?.role === 'admin'">
+      <!-- Tableau des statistiques en temps réel -->
+      <section class="admin-stats-grid">
+        
+        <div class="stat-card s-blue">
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
           </div>
-          <div class="text-group">
-            <span class="action-title">SORTIE</span>
-            <span class="action-desc">Recherche & Clôture</span>
+          <div class="stat-info">
+            <span class="stat-value">{{ totalActiveVisitors }}</span>
+            <span class="stat-label">Visiteurs Actifs</span>
           </div>
         </div>
-      </button>
-    </section>
 
-    <!-- Section de filtrage administrateur -->
-    <section class="admin-filters-card" *ngIf="agent?.role === 'admin'">
-      <div class="filter-header">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="filter-icon">
-          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-        </svg>
-        <h4>Filtrer la garde active</h4>
-      </div>
-      <div class="filter-controls">
-        <label for="agent-select">Sélectionner un agent de garde :</label>
-        <select id="agent-select" class="luxury-select" (change)="onAgentFilterChange($event)">
-          <option value="all">Tous les agents en service</option>
-          <option value="1">Alexandre Martin (Guérite Principale)</option>
-          <option value="2">Sophie Dubois (Commandement Central)</option>
-        </select>
-      </div>
-    </section>
+        <div class="stat-card s-green">
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ activeGuardsCount }}</span>
+            <span class="stat-label">Agents de Garde</span>
+          </div>
+        </div>
 
-    <!-- Section des visites actives en cours -->
-    <section class="visites-actives">
-      <div class="section-title-wrapper">
-        <h3>{{ agent?.role === 'admin' ? 'Vue Globale du Bâtiment' : 'Mes Visiteurs Enregistrés' }} ({{ getFilteredVisites().length }})</h3>
-        <span class="pulse-live">● DIRECT</span>
-      </div>
+        <div class="stat-card s-gold">
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">{{ totalVisitsTodayCount }}</span>
+            <span class="stat-label">Entrées Aujourd'hui</span>
+          </div>
+        </div>
 
-      <!-- Liste vide si aucune visite -->
-      <div class="empty-state" *ngIf="getFilteredVisites().length === 0">
-        <div class="empty-icon-wrapper">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+      </section>
+
+      <!-- Panneau de filtrage administrateur -->
+      <section class="admin-filters-card">
+        <div class="filter-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="filter-icon">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
           </svg>
+          <h4>Supervision et Contrôle Active</h4>
         </div>
-        <p>Aucun visiteur actif ne correspond à ce filtre de service.</p>
-      </div>
+        <div class="filter-controls">
+          <label for="agent-select">Sélectionner une guérite à surveiller :</label>
+          <select id="agent-select" class="luxury-select" (change)="onAgentFilterChange($event)">
+            <option value="all">Tous les agents en service (Global Bâtiment)</option>
+            <option value="1">Alexandre Martin (Guérite Principale)</option>
+            <option value="2">Sophie Dubois (Commandement Central)</option>
+          </select>
+        </div>
+      </section>
 
-      <!-- Cartes de visites en cours -->
-      <div class="visites-list" *ngIf="getFilteredVisites().length > 0">
-        <div class="visite-card animate-card" *ngFor="let visite of getFilteredVisites()">
-          <div class="card-header">
-            <div class="visitor-meta">
-              <span class="visitor-name">{{ visite.prenom_visiteur }} {{ visite.nom_visiteur }}</span>
-              <span class="visitor-id">CNI: {{ visite.numero_cni }}</span>
-            </div>
-            <div class="badges-group">
-              <span class="badge-status-type">{{ visite.statut_visiteur }}</span>
-              <span class="badge-status">SUR SITE</span>
-            </div>
+      <!-- Registre en direct consolidé -->
+      <section class="visites-actives">
+        <div class="section-title-wrapper">
+          <h3>Registre Consolidé en Temps Réel ({{ getFilteredVisites().length }})</h3>
+          <span class="pulse-live">● SUPERVISION GLOBALE</span>
+        </div>
+
+        <!-- Liste vide si aucune visite correspondante -->
+        <div class="empty-state" *ngIf="getFilteredVisites().length === 0">
+          <div class="empty-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+            </svg>
           </div>
-          
-          <div class="card-body">
-            <div class="info-row">
-              <div class="info-col full-width">
-                <span class="info-label">Destination</span>
-                <span class="info-val destination-path">
-                  {{ visite.direction }}
-                  <span class="path-sep">➔</span>
-                  {{ visite.service }}
-                  <span class="path-sep">➔</span>
-                  {{ visite.division }}
-                </span>
+          <p>Aucun visiteur actif enregistré sous cette garde.</p>
+        </div>
+
+        <!-- Cartes consolidées de toutes les visites -->
+        <div class="visites-list" *ngIf="getFilteredVisites().length > 0">
+          <div class="visite-card animate-card" *ngFor="let visite of getFilteredVisites()">
+            <div class="card-header">
+              <div class="visitor-meta">
+                <span class="visitor-name">{{ visite.prenom_visiteur }} {{ visite.nom_visiteur }}</span>
+                <span class="visitor-id">CNI: {{ visite.numero_cni }}</span>
+              </div>
+              <div class="badges-group">
+                <span class="badge-status-type">{{ visite.statut_visiteur }}</span>
+                <span class="badge-status">SUR SITE</span>
               </div>
             </div>
+            
+            <div class="card-body">
+              <div class="info-row">
+                <div class="info-col full-width">
+                  <span class="info-label">Destination</span>
+                  <span class="info-val destination-path">
+                    {{ visite.direction }} <span class="path-sep">➔</span> {{ visite.service }} <span class="path-sep">➔</span> {{ visite.division }}
+                  </span>
+                </div>
+              </div>
 
-            <div class="info-row">
-              <div class="info-col">
-                <span class="info-label">Motif de visite</span>
-                <span class="info-val">{{ visite.but_visite }}</span>
+              <div class="info-row">
+                <div class="info-col">
+                  <span class="info-label">Motif de visite</span>
+                  <span class="info-val">{{ visite.but_visite }}</span>
+                </div>
+                <div class="info-col">
+                  <span class="info-label">Enregistré par</span>
+                  <span class="info-val agent-name-tag">{{ getAgentName(visite.id_agent) }}</span>
+                </div>
               </div>
-              <div class="info-col">
-                <span class="info-label">Enregistré par</span>
-                <span class="info-val agent-name-tag">{{ getAgentName(visite.id_agent) }}</span>
-              </div>
-            </div>
 
-            <div class="info-row">
-              <div class="info-col">
-                <span class="info-label">Heure d'entrée</span>
-                <span class="info-val">{{ visite.heure_entree | date:'HH:mm:ss' }}</span>
-              </div>
-              <div class="info-col">
-                <!-- Minuteur en temps réel -->
-                <div class="timer-section">
-                  <div class="timer-label-group">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="timer-icon">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12,6 12,12 16,14"></polyline>
-                    </svg>
-                    <span>Durée</span>
+              <div class="info-row">
+                <div class="info-col">
+                  <span class="info-label">Heure d'entrée</span>
+                  <span class="info-val">{{ visite.heure_entree | date:'HH:mm:ss' }}</span>
+                </div>
+                <div class="info-col">
+                  <!-- Minuteur en temps réel -->
+                  <div class="timer-section">
+                    <div class="timer-label-group">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="timer-icon">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12,6 12,12 16,14"></polyline>
+                      </svg>
+                      <span>Durée</span>
+                    </div>
+                    <span class="timer-value">{{ visitesDurees[visite.id || ''] || '00:00:00' }}</span>
                   </div>
-                  <span class="timer-value">{{ visitesDurees[visite.id || ''] || '00:00:00' }}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </ng-container>
 
   </main>
 
@@ -177,7 +296,7 @@
       <span>Accueil</span>
     </a>
     
-    <a routerLink="/scan-entree" class="nav-item">
+    <a routerLink="/scan-entree" class="nav-item" *ngIf="agent?.role !== 'admin'">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
         <line x1="9" y1="9" x2="15" y2="9"></line>
@@ -187,7 +306,7 @@
       <span>Entrée</span>
     </a>
 
-    <a routerLink="/scan-sortie" class="nav-item">
+    <a routerLink="/scan-sortie" class="nav-item" *ngIf="agent?.role !== 'admin'">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
         <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
       </svg>

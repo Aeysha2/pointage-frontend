@@ -45,8 +45,13 @@ export class ScanSortieComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Charger les visites actives en cours pour l'agent (ou globales si admin)
     const agent = this.authService.getAgentProfile();
+    if (agent && agent.role === 'admin') {
+      this.router.navigate(['/home']);
+      return;
+    }
+
+    // Charger les visites actives en cours pour l'agent (ou globales si admin)
     const agentId = agent ? agent.id.toString() : '0';
     
     const sub = this.visiteService.streamVisiteEnCours(agentId).subscribe({
